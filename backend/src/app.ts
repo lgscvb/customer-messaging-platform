@@ -13,11 +13,12 @@ dotenv.config();
 // 暫時註釋掉有類型問題的路由
 // import authRoutes from './routes/auth';
 // import userRoutes from './routes/users';
-// import messageRoutes from './routes/messages';
+import messageRoutes from './routes/messages';
 // import platformRoutes from './routes/platforms';
 // import knowledgeRoutes from './routes/knowledge';
 // import analyticsRoutes from './routes/analytics';
 import webhookRoutes from './routes/webhooks';
+import aiRoutes from './routes/ai';
 
 // 創建 Express 應用
 const app = express();
@@ -50,11 +51,12 @@ app.use(express.urlencoded({ extended: true }));
 // 暫時註釋掉有類型問題的路由
 // app.use('/api/auth', authRoutes);
 // app.use('/api/users', userRoutes);
-// app.use('/api/messages', messageRoutes);
+app.use('/api/messages', messageRoutes);
 // app.use('/api/platforms', platformRoutes);
 // app.use('/api/knowledge', knowledgeRoutes);
 // app.use('/api/analytics', analyticsRoutes);
 app.use('/api/webhooks', webhookRoutes);
+app.use('/api/ai', aiRoutes);
 
 // 健康檢查端點
 app.get('/health', (req: Request, res: Response) => {
