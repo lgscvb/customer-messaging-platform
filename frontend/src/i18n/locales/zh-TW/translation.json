@@ -2,6 +2,8 @@
   "common": {
     "loading": "載入中...",
     "error": "發生錯誤",
+    "warning": "警告",
+    "success": "成功",
     "save": "儲存",
     "cancel": "取消",
     "delete": "刪除",
@@ -9,7 +11,12 @@
     "create": "建立",
     "search": "搜尋",
     "filter": "篩選",
-    "language": "語言"
+    "language": "語言",
+    "refresh": "重新整理",
+    "processing": "處理中...",
+    "expand": "展開",
+    "collapse": "收合",
+    "dashboard": "儀表板"
   },
   "auth": {
     "login": "登入",
@@ -59,5 +66,69 @@
     "report": "報告",
     "chart": "圖表",
     "statistic": "統計"
+  },
+  "knowledge": {
+    "management": {
+      "title": "知識管理",
+      "errorTitle": "知識管理錯誤",
+      "errorMessage": "獲取知識項目時發生錯誤",
+      "totalItems": "知識項目總數",
+      "publishedItems": "已發布項目",
+      "unpublishedItems": "未發布項目",
+      "categories": "知識分類"
+    },
+    "extraction": {
+      "title": "知識提取",
+      "description": "從對話或修改的 AI 回覆中提取知識",
+      "extractFromConversation": "從對話中提取知識",
+      "extractFromModifiedResponse": "從修改的回覆中提取知識",
+      "successTitle": "知識提取成功",
+      "successMessage": "成功提取 {{count}} 個知識項目，已儲存 {{savedCount}} 個",
+      "noResultsTitle": "沒有提取結果",
+      "noResultsMessage": "沒有找到可提取的知識",
+      "errorTitle": "知識提取錯誤",
+      "errorMessage": "提取知識時發生錯誤",
+      "source": "來源",
+      "saved": "已儲存",
+      "confidenceScore": "信心分數",
+      "addToKnowledgeBase": "添加到知識庫"
+    },
+    "organization": {
+      "title": "知識組織",
+      "description": "組織和分類知識項目",
+      "noItemSelected": "請選擇一個知識項目",
+      "saveSuccess": "知識項目已儲存",
+      "saveError": "儲存知識項目時發生錯誤"
+    },
+    "graph": {
+      "title": "知識圖譜",
+      "description": "視覺化知識關聯"
+    },
+    "analytics": {
+      "title": "知識分析",
+      "description": "分析知識使用情況和效果"
+    },
+    "fileUploader": {
+      "title": "檔案上傳",
+      "description": "上傳各種類型的檔案到知識庫",
+      "dragAndDrop": "拖曳檔案到此處",
+      "or": "或",
+      "browseFiles": "瀏覽檔案",
+      "supportedFormats": "支援的格式",
+      "maxFileSize": "最大檔案大小",
+      "selectedFiles": "已選擇的檔案",
+      "uploadAll": "上傳所有檔案",
+      "uploading": "上傳中...",
+      "error": "錯誤",
+      "tooManyFiles": "檔案數量超過限制 (最多 {{max}} 個檔案)",
+      "fileTooLarge": "檔案 {{name}} 太大 (最大 {{size}} MB)",
+      "noFiles": "沒有選擇檔案",
+      "allFilesUploaded": "所有檔案已上傳",
+      "uploadFailed": "上傳失敗",
+      "uploadSuccess": "成功上傳 {{count}} 個檔案",
+      "batchUploadFailed": "批次上傳失敗",
+      "uploadCompleteTitle": "檔案上傳完成",
+      "uploadCompleteMessage": "成功上傳 {{count}} 個檔案到知識庫"
+    }
   }
 }

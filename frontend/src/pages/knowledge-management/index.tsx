@@ -23,6 +23,7 @@ import {
   Category as CategoryIcon,
   AccountTree as AccountTreeIcon,
   Analytics as AnalyticsIcon,
+  CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
 import { useNotifications } from '../../contexts/NotificationContext';
 import { NotificationType } from '../../contexts/NotificationContext';
@@ -31,6 +32,7 @@ import KnowledgeExtraction from '../../components/knowledge/KnowledgeExtraction'
 import KnowledgeOrganization from '../../components/knowledge/KnowledgeOrganization';
 import KnowledgeGraph from '../../components/knowledge/KnowledgeGraph';
 import KnowledgeAnalytics from '../../components/knowledge/KnowledgeAnalytics';
+import KnowledgeFileUploader from '../../components/knowledge/KnowledgeFileUploader';
 
 // 定義標籤面板接口
 interface TabPanelProps {
@@ -151,6 +153,30 @@ const KnowledgeManagementPage: React.FC = () => {
     
     // 切換到知識圖譜標籤
     setTabValue(2);
+  };
+  
+  // 處理檔案上傳完成
+  const handleFileUploadComplete = (knowledgeItemIds: string[]) => {
+    // 刷新知識項目列表
+    fetchKnowledgeItems();
+    
+    // 如果有上傳的知識項目，選擇第一個
+    if (knowledgeItemIds.length > 0) {
+      setSelectedKnowledgeItemId(knowledgeItemIds[0]);
+      
+      // 切換到知識組織標籤
+      setTabValue(1);
+    }
+    
+    // 顯示通知
+    addNotification({
+      type: NotificationType.SUCCESS,
+      title: t('knowledge.fileUploader.uploadCompleteTitle', '檔案上傳完成'),
+      message: t('knowledge.fileUploader.uploadCompleteMessage', {
+        count: knowledgeItemIds.length,
+        defaultValue: `成功上傳 ${knowledgeItemIds.length} 個檔案到知識庫`
+      })
+    });
   };
   
   // 渲染統計信息
@@ -284,6 +310,11 @@ const KnowledgeManagementPage: React.FC = () => {
             label={t('knowledge.analytics.title')}
             {...a11yProps(3)}
           />
+          <Tab
+            icon={<CloudUploadIcon />}
+            label={t('knowledge.fileUploader.title', '檔案上傳')}
+            {...a11yProps(4)}
+          />
         </Tabs>
         
         <Divider />
@@ -320,6 +351,15 @@ const KnowledgeManagementPage: React.FC = () => {
         {/* 知識分析標籤面板 */}
         <TabPanel value={tabValue} index={3}>
           <KnowledgeAnalytics />
+        </TabPanel>
+        
+        {/* 檔案上傳標籤面板 */}
+        <TabPanel value={tabValue} index={4}>
+          <KnowledgeFileUploader
+            onUploadComplete={handleFileUploadComplete}
+            maxFiles={20}
+            maxFileSize={100}
+          />
         </TabPanel>
       </Paper>
     </Container>
