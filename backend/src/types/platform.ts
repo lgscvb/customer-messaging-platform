@@ -52,6 +52,26 @@ export enum CustomerStatus {
 }
 
 /**
+ * 平台狀態枚舉
+ */
+export enum PlatformStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inactive',
+  PENDING = 'pending',
+  ERROR = 'error'
+}
+
+/**
+ * 同步狀態枚舉
+ */
+export enum SyncStatus {
+  SUCCESS = 'success',
+  FAILED = 'failed',
+  PARTIAL = 'partial',
+  PENDING = 'pending'
+}
+
+/**
  * 平台配置接口
  */
 export interface PlatformConfig {

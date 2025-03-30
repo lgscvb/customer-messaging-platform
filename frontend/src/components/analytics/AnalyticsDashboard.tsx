@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import * as React from 'react';
 import { 
   Box, 
   Grid, 
@@ -11,13 +11,13 @@ import {
   InputLabel,
   Select,
   MenuItem,
-  SelectChangeEvent,
   Button,
   Stack,
   Chip,
   CircularProgress,
   Alert,
-  AlertTitle
+  AlertTitle,
+  SelectChangeEvent
 } from '@mui/material';
 import { 
   TrendingUp as TrendingUpIcon,
@@ -25,18 +25,17 @@ import {
   Person as PersonIcon,
   Message as MessageIcon,
   SmartToy as SmartToyIcon,
-  CalendarToday as CalendarTodayIcon
+  CalendarToday as CalendarTodayIcon,
+  ShoppingCart as ShoppingCartIcon
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import LineChart, { LineChartSeries } from '../charts/LineChart';
 import PieChart, { PieChartDataItem } from '../charts/PieChart';
+import BarChart from '../charts/BarChart';
+import { BarChartSeries } from '../charts/BarChart';
 import analyticsService from '../../services/analytics-service';
-import { formatDate } from '../../lib/utils';
-
-/**
- * 時間範圍類型
- */
-type TimeRange = 'day' | 'week' | 'month' | 'quarter' | 'year';
+import { formatDate } from '../../utils/formatters';
+import { TimeRange } from '../../types/analytics';
 
 /**
  * 統計卡片屬性
@@ -152,16 +151,19 @@ const StatCard: React.FC<StatCardProps> = ({
  */
 const AnalyticsDashboard: React.FC = () => {
   const { t } = useTranslation();
-  const [timeRange, setTimeRange] = useState<TimeRange>('week');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
+  const [timeRange, setTimeRange] = React.useState<TimeRange>('week');
+  const [loading, setLoading] = React.useState(true);
+  const [error, setError] = React.useState<string | null>(null);
   
   // 數據狀態
-  const [messageStats, setMessageStats] = useState<any>(null);
-  const [customerStats, setCustomerStats] = useState<any>(null);
-  const [aiStats, setAIStats] = useState<any>(null);
-  const [platformDistribution, setPlatformDistribution] = useState<PieChartDataItem[]>([]);
-  const [messageTimeSeries, setMessageTimeSeries] = useState<LineChartSeries[]>([]);
+  const [messageStats, setMessageStats] = React.useState<any>(null);
+  const [customerStats, setCustomerStats] = React.useState<any>(null);
+  const [aiStats, setAIStats] = React.useState<any>(null);
+  const [salesStats, setSalesStats] = React.useState<any>(null);
+  const [platformDistribution, setPlatformDistribution] = React.useState<PieChartDataItem[]>([]);
+  const [messageTimeSeries, setMessageTimeSeries] = React.useState<LineChartSeries[]>([]);
+  const [categoryDistribution, setCategoryDistribution] = React.useState<BarChartSeries[]>([]);
+  const [salesTimeSeries, setSalesTimeSeries] = React.useState<LineChartSeries[]>([]);
   
   // 處理時間範圍變更
   const handleTimeRangeChange = (event: SelectChangeEvent) => {
@@ -245,16 +247,18 @@ const AnalyticsDashboard: React.FC = () => {
       };
       
       // 並行獲取數據
-      const [messageStatsData, customerStatsData, aiStatsData] = await Promise.all([
+      const [messageStatsData, customerStatsData, aiStatsData, salesStatsData] = await Promise.all([
         analyticsService.getMessageStats(filter),
         analyticsService.getCustomerStats(filter),
-        analyticsService.getAIStats(filter)
+        analyticsService.getAIStats(filter),
+        analyticsService.getSalesStats(filter)
       ]);
       
       // 更新狀態
       setMessageStats(messageStatsData);
       setCustomerStats(customerStatsData);
       setAIStats(aiStatsData);
+      setSalesStats(salesStatsData);
       
       // 處理平台分佈數據
       const platformData: PieChartDataItem[] = Object.entries(messageStatsData.byPlatform).map(
@@ -294,6 +298,42 @@ const AnalyticsDashboard: React.FC = () => {
       
       setMessageTimeSeries([inboundSeries, outboundSeries]);
       
+      // 處理類別分佈數據
+      if (aiStatsData && aiStatsData.topCategories) {
+        const categorySeries: BarChartSeries = {
+          name: t('analytics.messageCategories'),
+          data: aiStatsData.topCategories.map((category: any) => ({
+            label: category.name,
+            value: category.count
+          })),
+          color: '#8C6EFF'
+        };
+        setCategoryDistribution([categorySeries]);
+      }
+      
+      // 處理銷售時間序列數據
+      if (salesStatsData && salesStatsData.salesTrend) {
+        const salesCountSeries: LineChartSeries = {
+          name: t('analytics.salesCount'),
+          data: salesStatsData.salesTrend.map((item: any) => ({
+            label: formatDate(new Date(item.date)),
+            value: item.count
+          })),
+          color: '#FF9800'
+        };
+        
+        const salesAmountSeries: LineChartSeries = {
+          name: t('analytics.salesAmount'),
+          data: salesStatsData.salesTrend.map((item: any) => ({
+            label: formatDate(new Date(item.date)),
+            value: item.amount
+          })),
+          color: '#F44336'
+        };
+        
+        setSalesTimeSeries([salesCountSeries, salesAmountSeries]);
+      }
+      
     } catch (err) {
       console.error('加載分析數據錯誤:', err);
       setError('加載分析數據時發生錯誤。請稍後再試。');
@@ -303,7 +343,7 @@ const AnalyticsDashboard: React.FC = () => {
   };
   
   // 初始加載和時間範圍變更時加載數據
-  useEffect(() => {
+  React.useEffect(() => {
     loadData();
   }, [timeRange]);
   
@@ -316,7 +356,9 @@ const AnalyticsDashboard: React.FC = () => {
     messageChange: 12.5,
     customerChange: 8.3,
     activeCustomerChange: 15.2,
-    aiAccuracyChange: 3.7
+    aiAccuracyChange: 3.7,
+    conversionRate: 5.8,
+    conversionRateChange: 0.7
   };
   
   return (
@@ -416,21 +458,9 @@ const AnalyticsDashboard: React.FC = () => {
         </Grid>
         <Grid item xs={12} sm={6} md={3}>
           <StatCard
-            title={t('analytics.activeCustomers')}
-            value={customerStats?.active || mockData.activeCustomers}
-            icon={<PersonIcon />}
-            change={mockData.activeCustomerChange}
-            changeText={t('analytics.comparedToPrevious')}
-            loading={loading}
-            color="success"
-          />
-        </Grid>
-        <Grid item xs={12} sm={6} md={3}>
-          <StatCard
-            title={t('analytics.aiAccuracy')}
-            value={`${aiStats?.confidenceDistribution ? 
-              Math.round(aiStats.confidenceDistribution.reduce((a: number, b: number) => a + b, 0) / 
-              aiStats.confidenceDistribution.length) : 
+            title={t('analytics.aiReplyRate')}
+            value={`${aiStats?.aiReplyPercentage ? 
+              Math.round(aiStats.aiReplyPercentage) : 
               mockData.aiAccuracy}%`}
             icon={<SmartToyIcon />}
             change={mockData.aiAccuracyChange}
@@ -439,10 +469,23 @@ const AnalyticsDashboard: React.FC = () => {
             color="info"
           />
         </Grid>
+        <Grid item xs={12} sm={6} md={3}>
+          <StatCard
+            title={t('analytics.conversionRate')}
+            value={`${salesStats?.conversionRate ? 
+              Math.round(salesStats.conversionRate * 10) / 10 : 
+              mockData.conversionRate}%`}
+            icon={<ShoppingCartIcon />}
+            change={mockData.conversionRateChange}
+            changeText={t('analytics.comparedToPrevious')}
+            loading={loading}
+            color="success"
+          />
+        </Grid>
       </Grid>
       
-      {/* 圖表 */}
-      <Grid container spacing={3}>
+      {/* 圖表 - 第一行 */}
+      <Grid container spacing={3} sx={{ mb: 4 }}>
         <Grid item xs={12} md={8}>
           <LineChart
             title={t('analytics.messageActivity')}
@@ -462,6 +505,32 @@ const AnalyticsDashboard: React.FC = () => {
             loading={loading}
             error={error || undefined}
             donut={true}
+          />
+        </Grid>
+      </Grid>
+      
+      {/* 圖表 - 第二行 */}
+      <Grid container spacing={3}>
+        <Grid item xs={12} md={6}>
+          <BarChart
+            title={t('analytics.topCategories')}
+            series={categoryDistribution}
+            height={400}
+            loading={loading}
+            error={error || undefined}
+            yAxisLabel={t('analytics.messageCount')}
+            horizontal={true}
+          />
+        </Grid>
+        <Grid item xs={12} md={6}>
+          <LineChart
+            title={t('analytics.salesTrend')}
+            series={salesTimeSeries}
+            height={400}
+            loading={loading}
+            error={error || undefined}
+            yAxisLabel={t('analytics.count')}
+            xAxisLabel={t('analytics.date')}
           />
         </Grid>
       </Grid>

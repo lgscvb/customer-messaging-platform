@@ -27,6 +27,8 @@ export interface User {
   email: string;
   firstName: string;
   lastName: string;
+  name?: string; // 全名（firstName + lastName）
+  avatar?: string; // 頭像 URL
   role: UserRole;
   status: UserStatus;
   isActive: boolean;
@@ -44,6 +46,7 @@ export interface CreateUserDTO {
   password: string;
   firstName: string;
   lastName: string;
+  avatar?: string;
   role?: UserRole;
   status?: UserStatus;
   isActive?: boolean;
@@ -58,6 +61,7 @@ export interface UpdateUserDTO {
   password?: string;
   firstName?: string;
   lastName?: string;
+  avatar?: string;
   role?: UserRole;
   status?: UserStatus;
   isActive?: boolean;

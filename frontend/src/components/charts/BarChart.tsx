@@ -1,41 +1,59 @@
 import React, { useRef, useEffect } from 'react';
-import { Box, useTheme } from '@mui/material';
+import { Box, useTheme, Typography, Paper, CircularProgress, Alert } from '@mui/material';
 import Chart from 'chart.js/auto';
 
 /**
  * 圖表數據項接口
  */
 interface ChartDataItem {
-  name: string;
+  label: string;
   value: number;
-  color: string;
+}
+
+/**
+ * 柱狀圖數據系列接口
+ */
+export interface BarChartSeries {
+  name: string;
+  data: ChartDataItem[];
+  color?: string;
 }
 
 /**
  * 柱狀圖屬性接口
  */
 interface BarChartProps {
-  data: ChartDataItem[];
+  title?: string;
+  series: BarChartSeries[];
+  height?: number;
   horizontal?: boolean;
   showValues?: boolean;
-  height?: number;
+  loading?: boolean;
+  error?: string;
+  yAxisLabel?: string;
+  xAxisLabel?: string;
 }
 
 /**
  * 柱狀圖組件
  */
 const BarChart: React.FC<BarChartProps> = ({ 
-  data, 
+  title,
+  series, 
+  height = 300,
   horizontal = false, 
   showValues = false,
-  height = 300
+  loading = false,
+  error,
+  yAxisLabel,
+  xAxisLabel
 }) => {
   const chartRef = useRef<HTMLCanvasElement | null>(null);
   const chartInstance = useRef<Chart | null>(null);
   const theme = useTheme();
   
   useEffect(() => {
-    if (!chartRef.current || data.length === 0) return;
+    if (!chartRef.current || loading || error || series.length === 0) return;
     
     // 銷毀舊圖表
     if (chartInstance.current) {
@@ -46,26 +64,29 @@ const BarChart: React.FC<BarChartProps> = ({
     if (!ctx) return;
     
     // 準備數據
-    const labels = data.map(item => item.name);
-    const values = data.map(item => item.value);
-    const colors = data.map(item => item.color);
+    const allLabels = series[0].data.map(item => item.label);
+    
+    const datasets = series.map((s, index) => {
+      const color = s.color || getDefaultColor(index, theme);
+      
+      return {
+        label: s.name,
+        data: s.data.map(item => item.value),
+        backgroundColor: color,
+        borderColor: color,
+        borderWidth: 1,
+        borderRadius: 4,
+        barThickness: horizontal ? 20 : 'flex',
+        maxBarThickness: 50
+      };
+    });
     
     // 創建圖表
     chartInstance.current = new Chart(ctx, {
-      type: horizontal ? 'bar' : 'bar',
+      type: 'bar',
       data: {
-        labels,
-        datasets: [
-          {
-            data: values,
-            backgroundColor: colors,
-            borderColor: colors.map(color => color),
-            borderWidth: 1,
-            borderRadius: 4,
-            barThickness: horizontal ? 20 : 'flex',
-            maxBarThickness: 50
-          }
-        ]
+        labels: allLabels,
+        datasets
       },
       options: {
         indexAxis: horizontal ? 'y' : 'x',
@@ -73,7 +94,20 @@ const BarChart: React.FC<BarChartProps> = ({
         maintainAspectRatio: false,
         plugins: {
           legend: {
-            display: false
+            display: series.length > 1,
+            position: 'top',
+            align: 'end',
+            labels: {
+              color: theme.palette.text.secondary,
+              usePointStyle: true,
+              pointStyle: 'circle',
+              padding: 15,
+              boxWidth: 8,
+              boxHeight: 8,
+              font: {
+                size: 11
+              }
+            }
           },
           tooltip: {
             backgroundColor: theme.palette.background.paper,
@@ -86,7 +120,9 @@ const BarChart: React.FC<BarChartProps> = ({
             usePointStyle: true,
             callbacks: {
               label: (context) => {
-                return `${context.dataset.data[context.dataIndex]}`;
+                const label = context.dataset.label || '';
+                const value = context.parsed.y !== undefined ? context.parsed.y : context.parsed.x;
+                return `${label}: ${value}`;
               }
             }
           }
@@ -104,6 +140,16 @@ const BarChart: React.FC<BarChartProps> = ({
                 size: 11
               },
               padding: 8
+            },
+            title: {
+              display: !!xAxisLabel,
+              text: xAxisLabel || '',
+              color: theme.palette.text.secondary,
+              font: {
+                size: 12,
+                weight: 'normal'
+              },
+              padding: { top: 10 }
             }
           },
           y: {
@@ -118,6 +164,16 @@ const BarChart: React.FC<BarChartProps> = ({
                 size: 11
               },
               padding: 8
+            },
+            title: {
+              display: !!yAxisLabel,
+              text: yAxisLabel || '',
+              color: theme.palette.text.secondary,
+              font: {
+                size: 12,
+                weight: 'normal'
+              },
+              padding: { bottom: 10 }
             }
           }
         },
@@ -134,12 +190,59 @@ const BarChart: React.FC<BarChartProps> = ({
         chartInstance.current.destroy();
       }
     };
-  }, [data, horizontal, theme]);
+  }, [series, horizontal, loading, error, theme, yAxisLabel, xAxisLabel]);
+  
+  // 獲取默認顏色
+  const getDefaultColor = (index: number, theme: any): string => {
+    const colors = [
+      theme.palette.primary.main,
+      theme.palette.secondary.main,
+      theme.palette.success.main,
+      theme.palette.info.main,
+      theme.palette.warning.main,
+      theme.palette.error.main
+    ];
+    
+    return colors[index % colors.length];
+  };
   
   return (
-    <Box sx={{ width: '100%', height }}>
-      <canvas ref={chartRef} />
-    </Box>
+    <Paper 
+      elevation={0} 
+      sx={{ 
+        p: 3, 
+        height: '100%', 
+        display: 'flex', 
+        flexDirection: 'column',
+        border: 1,
+        borderColor: 'divider',
+        borderRadius: 2
+      }}
+    >
+      {title && (
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          {title}
+        </Typography>
+      )}
+      
+      <Box sx={{ flexGrow: 1, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+        {loading ? (
+          <CircularProgress />
+        ) : error ? (
+          <Alert severity="error" sx={{ width: '100%' }}>
+            {error}
+          </Alert>
+        ) : series.length === 0 ? (
+          <Typography color="text.secondary">
+            無可用數據
+          </Typography>
+        ) : (
+          <Box sx={{ width: '100%', height: '100%', minHeight: height }}>
+            <canvas ref={chartRef} />
+          </Box>
+        )}
+      </Box>
+    </Paper>
   );
 };
 

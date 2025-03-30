@@ -11,7 +11,9 @@ interface CustomerPlatformAttributes {
   customerId: string;
   platformId: string;
   platformType: PlatformType;
+  platformCustomerId: string;
   platformData: Record<string, any>;
+  lastSyncTime?: Date;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -19,7 +21,7 @@ interface CustomerPlatformAttributes {
 /**
  * 創建客戶平台時的可選屬性
  */
-interface CustomerPlatformCreationAttributes extends Optional<CustomerPlatformAttributes, 'id' | 'createdAt' | 'updatedAt'> {}
+interface CustomerPlatformCreationAttributes extends Optional<CustomerPlatformAttributes, 'id' | 'lastSyncTime' | 'createdAt' | 'updatedAt'> {}
 
 /**
  * 客戶平台模型類
@@ -29,9 +31,16 @@ class CustomerPlatform extends Model<CustomerPlatformAttributes, CustomerPlatfor
   public customerId!: string;
   public platformId!: string;
   public platformType!: PlatformType;
+  public platformCustomerId!: string;
   public platformData!: Record<string, any>;
+  public lastSyncTime?: Date;
   public createdAt!: Date;
   public updatedAt!: Date;
+  
+  // 添加 type 屬性，用於分析服務
+  public get type(): PlatformType {
+    return this.platformType;
+  }
   
   // 關聯
   public customer?: Customer;
@@ -64,10 +73,18 @@ CustomerPlatform.init(
         isIn: [Object.values(PlatformType)],
       },
     },
+    platformCustomerId: {
+      type: DataTypes.STRING,
+      allowNull: false,
+    },
     platformData: {
       type: DataTypes.JSONB,
       allowNull: false,
       defaultValue: {},
+    },
+    lastSyncTime: {
+      type: DataTypes.DATE,
+      allowNull: true,
     },
     createdAt: {
       type: DataTypes.DATE,
@@ -99,6 +116,10 @@ CustomerPlatform.init(
         name: 'customer_platforms_platform_type_idx',
         fields: ['platform_type'],
       },
+      {
+        name: 'customer_platforms_platform_customer_id_idx',
+        fields: ['platform_customer_id'],
+      },
     ],
   }
 );
@@ -114,4 +135,4 @@ Customer.hasMany(CustomerPlatform, {
   as: 'platforms',
 });
 
-export { CustomerPlatform };
+export { CustomerPlatform, CustomerPlatformAttributes };

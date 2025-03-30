@@ -49,7 +49,6 @@ const PlatformsPage: React.FC = () => {
   const [selectedPlatformType, setSelectedPlatformType] = useState<PlatformType | ''>('');
   const [confirmDeleteDialog, setConfirmDeleteDialog] = useState(false);
   const [platformToDelete, setPlatformToDelete] = useState<PlatformConfig | null>(null);
-  const [syncingPlatform, setSyncingPlatform] = useState<string | null>(null);
   const [testingPlatform, setTestingPlatform] = useState<string | null>(null);
   
   /**
@@ -231,50 +230,17 @@ const PlatformsPage: React.FC = () => {
   /**
    * 處理同步平台
    */
-  const handleSyncPlatform = async (platform: PlatformConfig) => {
-    try {
-      setSyncingPlatform(platform.id);
-      
-      // 在開發環境中使用模擬數據
-      if (process.env.NODE_ENV === 'development') {
-        // 模擬延遲
-        await new Promise(resolve => setTimeout(resolve, 1500));
-        
-        addNotification({
-          type: NotificationType.SUCCESS,
-          title: t('platforms.syncSuccessTitle'),
-          message: t('platforms.syncSuccessMessage')
-        });
-        
-        setSyncingPlatform(null);
-        return;
-      }
-      
-      const result = await platformService.syncPlatform(platform.id);
-      
-      if (result.success) {
-        addNotification({
-          type: NotificationType.SUCCESS,
-          title: t('platforms.syncSuccessTitle'),
-          message: t('platforms.syncSuccessMessage')
-        });
-      } else {
-        addNotification({
-          type: NotificationType.ERROR,
-          title: t('platforms.errors.syncTitle'),
-          message: result.message
-        });
-      }
-    } catch (error) {
-      console.error('同步平台錯誤:', error);
-      addNotification({
-        type: NotificationType.ERROR,
-        title: t('platforms.errors.syncTitle'),
-        message: t('platforms.errors.syncMessage')
-      });
-    } finally {
-      setSyncingPlatform(null);
-    }
+  const handleSyncPlatform = (platform: PlatformConfig) => {
+    // 現在使用 PlatformSyncButton 組件處理同步，這個函數只是為了保持接口一致
+    // 實際的同步邏輯已經移到 PlatformSyncButton 組件中
+  };
+  
+  /**
+   * 同步完成後的回調
+   */
+  const handleSyncComplete = () => {
+    // 同步完成後刷新平台列表
+    handleRefresh();
   };
   
   /**
@@ -374,6 +340,7 @@ const PlatformsPage: React.FC = () => {
           onSync={handleSyncPlatform}
           onTest={handleTestConnection}
           onView={handleViewPlatform}
+          onSyncComplete={handleSyncComplete}
         />
       </Grid>
     ));

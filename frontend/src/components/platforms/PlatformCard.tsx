@@ -29,6 +29,7 @@ import {
 import { format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
 import { PlatformConfig, PlatformStatus, PlatformType } from '../../types/platform';
+import PlatformSyncButton from './PlatformSyncButton';
 
 /**
  * 平台圖標映射
@@ -97,6 +98,7 @@ interface PlatformCardProps {
   onSync?: (platform: PlatformConfig) => void;
   onTest?: (platform: PlatformConfig) => void;
   onView?: (platform: PlatformConfig) => void;
+  onSyncComplete?: () => void;
 }
 
 /**
@@ -109,7 +111,8 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
   onDelete,
   onSync,
   onTest,
-  onView
+  onView,
+  onSyncComplete
 }) => {
   const { t } = useTranslation();
   const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
@@ -387,7 +390,7 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
       
       <Divider />
       
-      <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between' }}>
+      <Box sx={{ p: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <Tooltip title={platform.status === PlatformStatus.ACTIVE ? t('platforms.connected') : t('platforms.disconnected')}>
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
             {platform.status === PlatformStatus.ACTIVE ? (
@@ -398,13 +401,24 @@ const PlatformCard: React.FC<PlatformCardProps> = ({
           </Box>
         </Tooltip>
         
-        <Button 
-          size="small" 
-          variant="outlined"
-          onClick={handleView}
-        >
-          {t('platforms.actions.manage')}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 1 }}>
+          <PlatformSyncButton 
+            platformId={platform.id}
+            platformType={platform.type}
+            disabled={platform.status !== PlatformStatus.ACTIVE}
+            size="small"
+            variant="outlined"
+            onSyncComplete={onSyncComplete}
+          />
+          
+          <Button 
+            size="small" 
+            variant="outlined"
+            onClick={handleView}
+          >
+            {t('platforms.actions.manage')}
+          </Button>
+        </Box>
       </Box>
     </Card>
   );

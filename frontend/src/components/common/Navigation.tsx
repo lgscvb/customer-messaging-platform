@@ -32,10 +32,13 @@ import {
   Notifications as NotificationsIcon,
   ChevronLeft as ChevronLeftIcon,
   BarChart as BarChartIcon,
+  Analytics as AnalyticsIcon,
+  ShoppingCart as ShoppingCartIcon,
 } from '@mui/icons-material';
 import Logo from './Logo';
 import LanguageSwitcher from '../LanguageSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
+import { UserRole } from '../../types/user';
 
 // 抽屜寬度
 const drawerWidth = 240;
@@ -55,7 +58,7 @@ interface NavigationItem {
  * 導航組件屬性
  */
 interface NavigationProps {
-  children: React.ReactNode;
+  children?: React.ReactNode;
 }
 
 /**
@@ -97,6 +100,18 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
       label: t('navigation.knowledgeManagement'),
       icon: <BarChartIcon />,
       path: '/knowledge-management',
+    },
+    {
+      key: 'analytics',
+      label: t('navigation.analytics'),
+      icon: <AnalyticsIcon />,
+      path: '/analytics',
+    },
+    {
+      key: 'sales-analytics',
+      label: t('navigation.salesAnalytics'),
+      icon: <ShoppingCartIcon />,
+      path: '/analytics/sales',
     },
     {
       key: 'platforms',
@@ -187,7 +202,7 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
   
   // 過濾導航項目（根據用戶角色）
   const filteredNavigationItems = navigationItems.filter(
-    (item) => !item.adminOnly || (user && user.role === 'ADMIN')
+    (item) => !item.adminOnly || (user && user.role === UserRole.ADMIN)
   );
   
   return (
@@ -277,7 +292,7 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
             >
               {user?.avatar ? (
                 <Avatar
-                  alt={user.name}
+                  alt={user.name || `${user.firstName} ${user.lastName}`}
                   src={user.avatar}
                   sx={{ width: 32, height: 32 }}
                 />
@@ -396,17 +411,19 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
       </Drawer>
       
       {/* 主要內容 */}
-      <Box
-        component="main"
-        sx={{
-          flexGrow: 1,
-          p: 0,
-          width: { sm: `calc(100% - ${drawerWidth}px)` },
-          mt: '64px',
-        }}
-      >
-        {children}
-      </Box>
+      {children && (
+        <Box
+          component="main"
+          sx={{
+            flexGrow: 1,
+            p: 0,
+            width: { sm: `calc(100% - ${drawerWidth}px)` },
+            mt: '64px',
+          }}
+        >
+          {children}
+        </Box>
+      )}
     </Box>
   );
 };

@@ -1,5 +1,5 @@
 import api from './api';
-import { PlatformConfig, PlatformStatus, PlatformType } from '../types/platform';
+import { PlatformConfig, PlatformStatus, PlatformType, SyncStatus } from '../types/platform';
 
 /**
  * 平台連接狀態接口
@@ -17,8 +17,9 @@ export interface ConnectionStatus {
 export interface SyncResult {
   success: boolean;
   message: string;
-  syncedItems: number;
-  failedItems: number;
+  syncId?: string;
+  syncedItems?: number;
+  failedItems?: number;
   details?: Record<string, any>;
 }
 
@@ -79,6 +80,35 @@ const platformConnectionService = {
   },
   
   /**
+   * 取消同步任務
+   */
+  cancelSync: async (platformId: string, syncId: string): Promise<SyncResult> => {
+    try {
+      const response = await api.post(`/platforms/${platformId}/sync/${syncId}/cancel`);
+      return response.data;
+    } catch (error: any) {
+      console.error('取消同步任務錯誤:', error);
+      return {
+        success: false,
+        message: error.response?.data?.message || '取消同步任務失敗'
+      };
+    }
+  },
+  
+  /**
+   * 獲取同步狀態
+   */
+  getSyncStatus: async (platformId: string, syncId: string): Promise<any> => {
+    try {
+      const response = await api.get(`/platforms/${platformId}/sync/${syncId}`);
+      return response.data;
+    } catch (error: any) {
+      console.error('獲取同步狀態錯誤:', error);
+      throw new Error(error.response?.data?.message || '獲取同步狀態失敗');
+    }
+  },
+  
+  /**
    * 測試平台連接
    */
   testConnection: async (platformId: string): Promise<ConnectionStatus> => {
@@ -128,6 +158,28 @@ const platformConnectionService = {
       console.error('獲取平台同步歷史錯誤:', error);
       return [];
     }
+  },
+  
+  /**
+   * 獲取模擬同步狀態（用於開發）
+   */
+  getMockSyncStatus: (syncId: string): any => {
+    // 模擬同步狀態
+    return {
+      id: syncId,
+      status: Math.random() > 0.2 ? SyncStatus.SUCCESS : SyncStatus.PENDING,
+      startTime: new Date(Date.now() - 60000).toISOString(),
+      endTime: Math.random() > 0.2 ? new Date().toISOString() : null,
+      messageCount: Math.floor(Math.random() * 100) + 50,
+      customerCount: Math.floor(Math.random() * 20) + 10,
+      details: {
+        newMessages: Math.floor(Math.random() * 50) + 20,
+        updatedMessages: Math.floor(Math.random() * 30) + 10,
+        newCustomers: Math.floor(Math.random() * 10) + 5,
+        updatedCustomers: Math.floor(Math.random() * 10) + 5,
+        errors: []
+      }
+    };
   },
   
   /**
@@ -194,11 +246,14 @@ const platformConnectionService = {
    */
   getMockSyncResult: (platformType: PlatformType): SyncResult => {
     // 根據平台類型返回不同的模擬同步結果
+    const syncId = Math.random().toString(36).substring(2, 15);
+    
     switch (platformType) {
       case PlatformType.LINE:
         return {
           success: true,
           message: '同步成功',
+          syncId,
           syncedItems: 45,
           failedItems: 0,
           details: {
@@ -210,6 +265,7 @@ const platformConnectionService = {
         return {
           success: true,
           message: '同步成功',
+          syncId,
           syncedItems: 78,
           failedItems: 2,
           details: {
@@ -229,6 +285,7 @@ const platformConnectionService = {
         return {
           success: true,
           message: '同步成功',
+          syncId,
           syncedItems: 56,
           failedItems: 0,
           details: {

@@ -1,6 +1,7 @@
 import { Model, DataTypes, Optional, Op } from 'sequelize';
 import sequelize from '../config/database';
 import { CustomerStatus } from '../types/platform';
+import { CustomerPlatform } from './CustomerPlatform';
 
 /**
  * 客戶屬性接口
@@ -34,7 +35,8 @@ class Customer extends Model<CustomerAttributes, CustomerCreationAttributes> imp
   public createdAt!: Date;
   public updatedAt!: Date;
   
-  // 關聯方法將在模型初始化後定義
+  // 關聯
+  public platforms?: CustomerPlatform[];
 }
 
 // 初始化客戶模型
@@ -114,4 +116,4 @@ Customer.init(
   }
 );
 
-export { Customer };
+export { Customer, CustomerAttributes };
