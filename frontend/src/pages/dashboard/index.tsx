@@ -16,6 +16,7 @@ import {
   Refresh as RefreshIcon 
 } from '@mui/icons-material';
 import OverviewSection from '../../components/dashboard/OverviewSection';
+import CustomerInteractionSection from '../../components/dashboard/CustomerInteractionSection';
 import { TimeRange } from '../../services/dashboardService';
 
 /**
@@ -65,11 +66,11 @@ const DashboardPage: React.FC = () => {
         );
       case 1:
         return (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6" color="text.secondary">
-              {t('dashboard.customerInteractionComingSoon')}
-            </Typography>
-          </Box>
+          <CustomerInteractionSection
+            key={`customer-interaction-${refreshKey}`}
+            timeRange={timeRange}
+            onTimeRangeChange={handleTimeRangeChange}
+          />
         );
       case 2:
         return (
