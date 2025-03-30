@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Box, 
@@ -14,13 +14,20 @@ import {
   IconButton,
   Alert,
   CircularProgress,
-  Tooltip
+  Tooltip,
+  Snackbar,
+  LinearProgress,
+  FormHelperText
 } from '@mui/material';
 import { 
   Visibility as VisibilityIcon, 
   VisibilityOff as VisibilityOffIcon, 
   ContentCopy as CopyIcon, 
-  Help as HelpIcon 
+  Help as HelpIcon,
+  Refresh as RefreshIcon,
+  Check as CheckIcon,
+  Error as ErrorIcon,
+  Info as InfoIcon
 } from '@mui/icons-material';
 import { LinePlatformConfig, PlatformStatus } from '../../../types/platform';
 import platformService from '../../../services/platformService';
@@ -33,6 +40,15 @@ interface LinePlatformFormProps {
   onSubmit: (data: any) => Promise<void>;
   onCancel: () => void;
   isEdit?: boolean;
+}
+
+/**
+ * 密碼強度接口
+ */
+interface PasswordStrength {
+  score: number; // 0-4
+  label: string;
+  color: string;
 }
 
 /**
@@ -64,11 +80,26 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
   
   // 狀態
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const [touched, setTouched] = useState<Record<string, boolean>>({});
   const [showSecrets, setShowSecrets] = useState<Record<string, boolean>>({
     channelSecret: false,
     accessToken: false
   });
   const [submitting, setSubmitting] = useState(false);
+  const [snackbar, setSnackbar] = useState<{
+    open: boolean;
+    message: string;
+    severity: 'success' | 'error' | 'info' | 'warning';
+  }>({
+    open: false,
+    message: '',
+    severity: 'info'
+  });
+  const [copied, setCopied] = useState<string | null>(null);
+  const [secretStrength, setSecretStrength] = useState<Record<string, PasswordStrength>>({
+    channelSecret: { score: 0, label: t('validation.weak'), color: 'error.main' },
+    accessToken: { score: 0, label: t('validation.weak'), color: 'error.main' }
+  });
   
   /**
    * 處理輸入變更
@@ -87,6 +118,11 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
           [field]: type === 'checkbox' ? checked : value
         }
       }));
+      
+      // 如果是密碼字段，計算強度
+      if (field === 'channelSecret' || field === 'accessToken') {
+        calculatePasswordStrength(field, value);
+      }
     } else {
       setFormData(prev => ({
         ...prev,
@@ -94,13 +130,123 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
       }));
     }
     
-    // 清除錯誤
-    if (errors[name]) {
-      setErrors(prev => ({
-        ...prev,
-        [name]: ''
-      }));
+    // 標記為已觸碰
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    
+    // 實時驗證
+    validateField(name, type === 'checkbox' ? checked : value);
+  };
+  
+  /**
+   * 處理字段失焦
+   */
+  const handleBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    const { name } = e.target;
+    
+    // 標記為已觸碰
+    setTouched(prev => ({
+      ...prev,
+      [name]: true
+    }));
+    
+    // 驗證字段
+    validateField(name, e.target.type === 'checkbox' ? e.target.checked : e.target.value);
+  };
+  
+  /**
+   * 驗證單個字段
+   */
+  const validateField = (name: string, value: any): boolean => {
+    let error = '';
+    
+    // 根據字段名稱進行驗證
+    if (name === 'name') {
+      if (!value.trim()) {
+        error = t('platforms.errors.nameRequired');
+      } else if (value.trim().length < 3) {
+        error = t('validation.minLength', { length: 3 });
+      } else if (value.trim().length > 50) {
+        error = t('validation.maxLength', { length: 50 });
+      }
+    } else if (name === 'credentials.channelId') {
+      if (!value.trim()) {
+        error = t('platforms.errors.channelIdRequired');
+      } else if (!/^\d+$/.test(value)) {
+        error = t('platforms.errors.channelIdFormat');
+      }
+    } else if (name === 'credentials.channelSecret') {
+      if (!value.trim()) {
+        error = t('platforms.errors.channelSecretRequired');
+      } else if (value.trim().length < 8) {
+        error = t('validation.minLength', { length: 8 });
+      }
+    } else if (name === 'credentials.accessToken') {
+      if (!value.trim()) {
+        error = t('platforms.errors.accessTokenRequired');
+      } else if (value.trim().length < 8) {
+        error = t('validation.minLength', { length: 8 });
+      }
+    } else if (name === 'settings.defaultReplyMessage' && formData.settings.autoReply) {
+      if (!value.trim()) {
+        error = t('platforms.errors.defaultReplyMessageRequired');
+      } else if (value.trim().length > 500) {
+        error = t('validation.maxLength', { length: 500 });
+      }
     }
+    
+    // 更新錯誤狀態
+    setErrors(prev => ({
+      ...prev,
+      [name]: error
+    }));
+    
+    return !error;
+  };
+  
+  /**
+   * 計算密碼強度
+   */
+  const calculatePasswordStrength = (field: string, value: string) => {
+    // 簡單的密碼強度計算
+    let score = 0;
+    
+    if (value.length >= 8) score += 1;
+    if (value.length >= 12) score += 1;
+    if (/[A-Z]/.test(value)) score += 1;
+    if (/[0-9]/.test(value)) score += 1;
+    if (/[^A-Za-z0-9]/.test(value)) score += 1;
+    
+    let label = '';
+    let color = '';
+    
+    switch (score) {
+      case 0:
+      case 1:
+        label = t('validation.weak');
+        color = 'error.main';
+        break;
+      case 2:
+        label = t('validation.fair');
+        color = 'warning.main';
+        break;
+      case 3:
+        label = t('validation.good');
+        color = 'info.main';
+        break;
+      case 4:
+      case 5:
+        label = t('validation.strong');
+        color = 'success.main';
+        break;
+    }
+    
+    setSecretStrength(prev => ({
+      ...prev,
+      [field]: { score, label, color }
+    }));
   };
   
   /**
@@ -116,44 +262,49 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
   /**
    * 複製到剪貼板
    */
-  const copyToClipboard = (text: string) => {
+  const copyToClipboard = (text: string, field: string) => {
     navigator.clipboard.writeText(text);
+    setCopied(field);
+    
+    // 3秒後重置複製狀態
+    setTimeout(() => {
+      setCopied(null);
+    }, 3000);
+    
+    // 顯示通知
+    setSnackbar({
+      open: true,
+      message: t('common.copied'),
+      severity: 'success'
+    });
   };
   
   /**
    * 驗證表單
    */
   const validateForm = (): boolean => {
-    const newErrors: Record<string, string> = {};
+    // 驗證所有字段
+    const nameValid = validateField('name', formData.name);
+    const channelIdValid = validateField('credentials.channelId', formData.credentials.channelId);
+    const channelSecretValid = validateField('credentials.channelSecret', formData.credentials.channelSecret);
+    const accessTokenValid = validateField('credentials.accessToken', formData.credentials.accessToken);
     
-    // 驗證名稱
-    if (!formData.name.trim()) {
-      newErrors['name'] = t('platforms.errors.nameRequired');
+    // 如果啟用了自動回覆，驗證預設回覆訊息
+    let defaultReplyMessageValid = true;
+    if (formData.settings.autoReply) {
+      defaultReplyMessageValid = validateField('settings.defaultReplyMessage', formData.settings.defaultReplyMessage);
     }
     
-    // 驗證 Channel ID
-    if (!formData.credentials.channelId.trim()) {
-      newErrors['credentials.channelId'] = t('platforms.errors.channelIdRequired');
-    }
+    // 標記所有字段為已觸碰
+    setTouched({
+      'name': true,
+      'credentials.channelId': true,
+      'credentials.channelSecret': true,
+      'credentials.accessToken': true,
+      'settings.defaultReplyMessage': formData.settings.autoReply
+    });
     
-    // 驗證 Channel Secret
-    if (!formData.credentials.channelSecret.trim()) {
-      newErrors['credentials.channelSecret'] = t('platforms.errors.channelSecretRequired');
-    }
-    
-    // 驗證 Access Token
-    if (!formData.credentials.accessToken.trim()) {
-      newErrors['credentials.accessToken'] = t('platforms.errors.accessTokenRequired');
-    }
-    
-    // 驗證預設回覆訊息
-    if (formData.settings.autoReply && !formData.settings.defaultReplyMessage.trim()) {
-      newErrors['settings.defaultReplyMessage'] = t('platforms.errors.defaultReplyMessageRequired');
-    }
-    
-    setErrors(newErrors);
-    
-    return Object.keys(newErrors).length === 0;
+    return nameValid && channelIdValid && channelSecretValid && accessTokenValid && defaultReplyMessageValid;
   };
   
   /**
@@ -163,15 +314,76 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
     e.preventDefault();
     
     if (!validateForm()) {
+      // 顯示錯誤通知
+      setSnackbar({
+        open: true,
+        message: t('validation.formErrors'),
+        severity: 'error'
+      });
       return;
     }
     
     try {
       setSubmitting(true);
       await onSubmit(formData);
+      
+      // 顯示成功通知
+      setSnackbar({
+        open: true,
+        message: isEdit ? t('platforms.updateSuccess') : t('platforms.addSuccess'),
+        severity: 'success'
+      });
+    } catch (error) {
+      // 顯示錯誤通知
+      setSnackbar({
+        open: true,
+        message: isEdit ? t('platforms.updateError') : t('platforms.addError'),
+        severity: 'error'
+      });
     } finally {
       setSubmitting(false);
     }
+  };
+  
+  /**
+   * 重置表單
+   */
+  const handleReset = () => {
+    // 重置為初始值或默認值
+    setFormData({
+      name: initialData?.name || defaultValues.name,
+      credentials: {
+        channelId: initialData?.credentials?.channelId || defaultValues.credentials.channelId,
+        channelSecret: initialData?.credentials?.channelSecret || defaultValues.credentials.channelSecret,
+        accessToken: initialData?.credentials?.accessToken || defaultValues.credentials.accessToken
+      },
+      settings: {
+        defaultReplyMessage: initialData?.settings?.defaultReplyMessage || defaultValues.settings.defaultReplyMessage,
+        autoReply: initialData?.settings?.autoReply !== undefined ? initialData.settings.autoReply : defaultValues.settings.autoReply,
+        useAi: initialData?.settings?.useAi !== undefined ? initialData.settings.useAi : defaultValues.settings.useAi
+      }
+    });
+    
+    // 重置錯誤和觸碰狀態
+    setErrors({});
+    setTouched({});
+    
+    // 顯示通知
+    setSnackbar({
+      open: true,
+      message: t('common.formReset'),
+      severity: 'info'
+    });
+  };
+  
+  /**
+   * 關閉通知
+   */
+  const handleSnackbarClose = () => {
+    setSnackbar(prev => ({
+      ...prev,
+      open: false
+    }));
   };
   
   /**
@@ -181,8 +393,29 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
     return `${process.env.NEXT_PUBLIC_API_URL || 'https://api.example.com'}/webhook/line`;
   };
   
+  /**
+   * 獲取密碼強度進度條顏色
+   */
+  const getPasswordStrengthColor = (score: number) => {
+    switch (score) {
+      case 0:
+      case 1:
+        return 'error';
+      case 2:
+        return 'warning';
+      case 3:
+        return 'info';
+      case 4:
+      case 5:
+        return 'success';
+      default:
+        return 'error';
+    }
+  };
+  
   return (
     <Box component="form" onSubmit={handleSubmit}>
+      {/* 基本信息 */}
       <Paper elevation={0} sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
           {t('platforms.basicInfo')}
@@ -196,15 +429,27 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
               name="name"
               value={formData.name}
               onChange={handleChange}
-              error={!!errors.name}
-              helperText={errors.name}
+              onBlur={handleBlur}
+              error={touched.name && !!errors.name}
+              helperText={touched.name && errors.name}
               required
               disabled={submitting}
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <InfoIcon color="primary" fontSize="small" />
+                  </InputAdornment>
+                )
+              }}
             />
+            <FormHelperText>
+              {t('platforms.nameHelp')}
+            </FormHelperText>
           </Grid>
         </Grid>
       </Paper>
       
+      {/* LINE 憑證 */}
       <Paper elevation={0} sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
           {t('platforms.lineCredentials')}
@@ -222,11 +467,23 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
               name="credentials.channelId"
               value={formData.credentials.channelId}
               onChange={handleChange}
-              error={!!errors['credentials.channelId']}
-              helperText={errors['credentials.channelId']}
+              onBlur={handleBlur}
+              error={touched['credentials.channelId'] && !!errors['credentials.channelId']}
+              helperText={touched['credentials.channelId'] && errors['credentials.channelId']}
               required
               disabled={submitting}
+              placeholder="1234567890"
+              InputProps={{
+                startAdornment: (
+                  <InputAdornment position="start">
+                    <InfoIcon color="primary" fontSize="small" />
+                  </InputAdornment>
+                )
+              }}
             />
+            <FormHelperText>
+              {t('platforms.channelIdHelp')}
+            </FormHelperText>
           </Grid>
           
           <Grid item xs={12}>
@@ -237,8 +494,9 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
               type={showSecrets.channelSecret ? 'text' : 'password'}
               value={formData.credentials.channelSecret}
               onChange={handleChange}
-              error={!!errors['credentials.channelSecret']}
-              helperText={errors['credentials.channelSecret']}
+              onBlur={handleBlur}
+              error={touched['credentials.channelSecret'] && !!errors['credentials.channelSecret']}
+              helperText={touched['credentials.channelSecret'] && errors['credentials.channelSecret']}
               required
               disabled={submitting}
               InputProps={{
@@ -254,6 +512,19 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                 )
               }}
             />
+            {formData.credentials.channelSecret && (
+              <>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={(secretStrength.channelSecret.score / 5) * 100} 
+                  color={getPasswordStrengthColor(secretStrength.channelSecret.score) as any}
+                  sx={{ mt: 1, mb: 0.5, height: 6, borderRadius: 3 }}
+                />
+                <FormHelperText sx={{ color: secretStrength.channelSecret.color }}>
+                  {t('validation.secretStrength')}: {secretStrength.channelSecret.label}
+                </FormHelperText>
+              </>
+            )}
           </Grid>
           
           <Grid item xs={12}>
@@ -264,8 +535,9 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
               type={showSecrets.accessToken ? 'text' : 'password'}
               value={formData.credentials.accessToken}
               onChange={handleChange}
-              error={!!errors['credentials.accessToken']}
-              helperText={errors['credentials.accessToken']}
+              onBlur={handleBlur}
+              error={touched['credentials.accessToken'] && !!errors['credentials.accessToken']}
+              helperText={touched['credentials.accessToken'] && errors['credentials.accessToken']}
               required
               disabled={submitting}
               InputProps={{
@@ -281,10 +553,24 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                 )
               }}
             />
+            {formData.credentials.accessToken && (
+              <>
+                <LinearProgress 
+                  variant="determinate" 
+                  value={(secretStrength.accessToken.score / 5) * 100} 
+                  color={getPasswordStrengthColor(secretStrength.accessToken.score) as any}
+                  sx={{ mt: 1, mb: 0.5, height: 6, borderRadius: 3 }}
+                />
+                <FormHelperText sx={{ color: secretStrength.accessToken.color }}>
+                  {t('validation.secretStrength')}: {secretStrength.accessToken.label}
+                </FormHelperText>
+              </>
+            )}
           </Grid>
         </Grid>
       </Paper>
       
+      {/* Webhook 設定 */}
       <Paper elevation={0} sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
           {t('platforms.webhookSettings')}
@@ -304,20 +590,27 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                 readOnly: true,
                 endAdornment: (
                   <InputAdornment position="end">
-                    <IconButton
-                      onClick={() => copyToClipboard(getWebhookUrl())}
-                      edge="end"
-                    >
-                      <CopyIcon />
-                    </IconButton>
+                    <Tooltip title={copied === 'webhook' ? t('common.copied') : t('common.copy')}>
+                      <IconButton
+                        onClick={() => copyToClipboard(getWebhookUrl(), 'webhook')}
+                        edge="end"
+                        color={copied === 'webhook' ? 'success' : 'default'}
+                      >
+                        {copied === 'webhook' ? <CheckIcon /> : <CopyIcon />}
+                      </IconButton>
+                    </Tooltip>
                   </InputAdornment>
                 )
               }}
             />
+            <FormHelperText>
+              {t('platforms.webhookUrlHelp')}
+            </FormHelperText>
           </Grid>
         </Grid>
       </Paper>
       
+      {/* 回覆設定 */}
       <Paper elevation={0} sx={{ p: 3, mb: 3, border: '1px solid', borderColor: 'divider', borderRadius: 2 }}>
         <Typography variant="h6" fontWeight="bold" gutterBottom>
           {t('platforms.replySettings')}
@@ -332,6 +625,7 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                   checked={formData.settings.autoReply}
                   onChange={handleChange}
                   disabled={submitting}
+                  color="primary"
                 />
               }
               label={
@@ -345,6 +639,9 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                 </Box>
               }
             />
+            <FormHelperText>
+              {t('platforms.autoReplyHelp')}
+            </FormHelperText>
           </Grid>
           
           {formData.settings.autoReply && (
@@ -355,12 +652,17 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                 name="settings.defaultReplyMessage"
                 value={formData.settings.defaultReplyMessage}
                 onChange={handleChange}
-                error={!!errors['settings.defaultReplyMessage']}
-                helperText={errors['settings.defaultReplyMessage']}
+                onBlur={handleBlur}
+                error={touched['settings.defaultReplyMessage'] && !!errors['settings.defaultReplyMessage']}
+                helperText={touched['settings.defaultReplyMessage'] && errors['settings.defaultReplyMessage']}
                 multiline
                 rows={3}
                 disabled={submitting}
+                placeholder={t('platforms.defaultReplyMessagePlaceholder')}
               />
+              <FormHelperText>
+                {t('platforms.defaultReplyMessageHelp')}
+              </FormHelperText>
             </Grid>
           )}
           
@@ -372,6 +674,7 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                   checked={formData.settings.useAi}
                   onChange={handleChange}
                   disabled={submitting}
+                  color="primary"
                 />
               }
               label={
@@ -385,28 +688,67 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                 </Box>
               }
             />
+            <FormHelperText>
+              {t('platforms.useAiHelp')}
+            </FormHelperText>
           </Grid>
         </Grid>
       </Paper>
       
-      <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 2, mt: 3 }}>
+      {/* 按鈕 */}
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', mt: 3 }}>
         <Button
           variant="outlined"
-          onClick={onCancel}
+          onClick={handleReset}
           disabled={submitting}
+          startIcon={<RefreshIcon />}
+          color="secondary"
         >
-          {t('common.cancel')}
+          {t('common.reset')}
         </Button>
         
-        <Button
-          type="submit"
-          variant="contained"
-          disabled={submitting}
-          startIcon={submitting ? <CircularProgress size={20} /> : null}
-        >
-          {isEdit ? t('common.save') : t('common.add')}
-        </Button>
+        <Box sx={{ display: 'flex', gap: 2 }}>
+          <Button
+            variant="outlined"
+            onClick={onCancel}
+            disabled={submitting}
+          >
+            {t('common.cancel')}
+          </Button>
+          
+          <Button
+            type="submit"
+            variant="contained"
+            disabled={submitting}
+            startIcon={submitting ? <CircularProgress size={20} /> : null}
+            color="primary"
+          >
+            {isEdit ? t('common.save') : t('common.add')}
+          </Button>
+        </Box>
       </Box>
+      
+      {/* 提交中進度條 */}
+      {submitting && (
+        <LinearProgress sx={{ mt: 2 }} />
+      )}
+      
+      {/* 通知 */}
+      <Snackbar
+        open={snackbar.open}
+        autoHideDuration={6000}
+        onClose={handleSnackbarClose}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+      >
+        <Alert 
+          onClose={handleSnackbarClose} 
+          severity={snackbar.severity}
+          variant="filled"
+          sx={{ width: '100%' }}
+        >
+          {snackbar.message}
+        </Alert>
+      </Snackbar>
     </Box>
   );
 };
