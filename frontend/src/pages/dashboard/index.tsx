@@ -17,6 +17,7 @@ import {
 } from '@mui/icons-material';
 import OverviewSection from '../../components/dashboard/OverviewSection';
 import CustomerInteractionSection from '../../components/dashboard/CustomerInteractionSection';
+import ReplyEffectivenessSection from '../../components/dashboard/ReplyEffectivenessSection';
 import { TimeRange } from '../../services/dashboardService';
 
 /**
@@ -74,11 +75,11 @@ const DashboardPage: React.FC = () => {
         );
       case 2:
         return (
-          <Box sx={{ p: 3, textAlign: 'center' }}>
-            <Typography variant="h6" color="text.secondary">
-              {t('dashboard.replyEffectivenessComingSoon')}
-            </Typography>
-          </Box>
+          <ReplyEffectivenessSection
+            key={`reply-effectiveness-${refreshKey}`}
+            timeRange={timeRange}
+            onTimeRangeChange={handleTimeRangeChange}
+          />
         );
       default:
         return null;
