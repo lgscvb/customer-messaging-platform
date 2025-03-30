@@ -1,4 +1,4 @@
-import { Model, DataTypes, Optional } from 'sequelize';
+import { Model, DataTypes, Optional, Op } from 'sequelize';
 import sequelize from '../config/database';
 
 /**
@@ -23,7 +23,7 @@ export interface KnowledgeItemAttributes {
 /**
  * 創建知識項目時的可選屬性
  */
-export interface KnowledgeItemCreationAttributes extends Optional<KnowledgeItemAttributes, 'id' | 'tags' | 'sourceUrl' | 'metadata' | 'createdAt' | 'updatedAt'> {}
+export interface KnowledgeItemCreationAttributes extends Optional<KnowledgeItemAttributes, 'id' | 'tags' | 'sourceUrl' | 'metadata' | 'isPublished' | 'createdAt' | 'updatedAt'> {}
 
 /**
  * 創建知識項目 DTO
@@ -151,11 +151,77 @@ KnowledgeItem.init(
       },
       {
         name: 'knowledge_items_is_published_idx',
-        fields: ['is_published'],
+        fields: ['isPublished'],
       },
     ],
   }
 );
 
-// 導出默認模型
+/**
+ * 知識項目模型擴展
+ */
+export const KnowledgeItemExtension = {
+  /**
+   * 搜索知識項目
+   * @param query 搜索關鍵字
+   * @param limit 限制數量
+   * @param offset 偏移量
+   */
+  async search(query: string, limit = 10, offset = 0): Promise<KnowledgeItem[]> {
+    const items = await KnowledgeItem.findAll({
+      where: {
+        [Op.or]: [
+          { title: { [Op.iLike]: `%${query}%` } },
+          { content: { [Op.iLike]: `%${query}%` } },
+        ],
+        isPublished: true,
+      },
+      limit,
+      offset,
+      order: [['updatedAt', 'DESC']],
+    });
+
+    return items;
+  },
+
+  /**
+   * 根據 ID 查找知識項目
+   * @param id 知識項目 ID
+   */
+  async findById(id: string): Promise<KnowledgeItem | null> {
+    return KnowledgeItem.findByPk(id);
+  },
+
+  /**
+   * 更新知識項目
+   * @param id 知識項目 ID
+   * @param data 更新數據
+   */
+  async update(id: string, data: UpdateKnowledgeItemDTO): Promise<KnowledgeItem | null> {
+    const item = await KnowledgeItem.findByPk(id);
+    
+    if (!item) {
+      return null;
+    }
+    
+    await item.update(data);
+    return item;
+  },
+
+  /**
+   * 刪除知識項目
+   * @param id 知識項目 ID
+   */
+  async delete(id: string): Promise<boolean> {
+    const item = await KnowledgeItem.findByPk(id);
+    
+    if (!item) {
+      return false;
+    }
+    
+    await item.destroy();
+    return true;
+  }
+};
+
 export default KnowledgeItem;

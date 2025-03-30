@@ -1,152 +1,97 @@
-import express, { Request, Response } from 'express';
-import { authenticateJwt, agentAndAbove, adminOnly } from '../middlewares/auth';
+import express from 'express';
+import { Request, Response, NextFunction } from 'express';
+import KnowledgeController from '../controllers/knowledge-controller';
+import * as authMiddleware from '../middlewares/auth';
 
 const router = express.Router();
 
 // 創建中間件包裝器，解決類型問題
-const authenticate = (req: Request, res: Response, next: any) => {
-  return authenticateJwt(req, res, next);
+const authenticate = (req: Request, res: Response, next: NextFunction) => {
+  return authMiddleware.authenticateJwt(req, res, next);
 };
-
-const requireAgentRole = (req: Request, res: Response, next: any) => {
-  return agentAndAbove(req, res, next);
-};
-
-const requireAdminRole = (req: Request, res: Response, next: any) => {
-  return adminOnly(req, res, next);
-};
-
-/**
- * @route GET /api/knowledge
- * @desc 獲取知識條目列表
- * @access Private
- */
-router.get('/', authenticate, (req, res) => {
-  // 臨時響應，實際實現將在知識庫控制器中完成
-  res.status(200).json({
-    message: '獲取知識條目列表功能尚未實現',
-    data: []
-  });
-});
-
-/**
- * @route GET /api/knowledge/:id
- * @desc 獲取單個知識條目
- * @access Private
- */
-router.get('/:id', authenticate, (req, res) => {
-  // 臨時響應，實際實現將在知識庫控制器中完成
-  res.status(200).json({
-    message: '獲取單個知識條目功能尚未實現',
-    data: {
-      id: req.params.id,
-      title: '示例知識條目',
-      content: '這是一個示例知識條目的內容。',
-      createdAt: new Date().toISOString()
-    }
-  });
-});
 
 /**
  * @route POST /api/knowledge
- * @desc 創建知識條目
- * @access Private (代理及以上)
+ * @desc 創建知識項目
+ * @access Private
  */
-router.post('/', authenticate, requireAgentRole, (req, res) => {
-  // 臨時響應，實際實現將在知識庫控制器中完成
-  res.status(201).json({
-    message: '創建知識條目功能尚未實現',
-    data: {
-      id: 'new-knowledge-id',
-      title: req.body.title || '示例知識條目',
-      content: req.body.content || '這是一個示例知識條目的內容。',
-      createdAt: new Date().toISOString()
-    }
-  });
-});
+router.post('/', authenticate, KnowledgeController.createKnowledgeItem);
+
+/**
+ * @route GET /api/knowledge/:id
+ * @desc 獲取知識項目
+ * @access Private
+ */
+router.get('/:id', authenticate, KnowledgeController.getKnowledgeItem);
 
 /**
  * @route PUT /api/knowledge/:id
- * @desc 更新知識條目
- * @access Private (代理及以上)
+ * @desc 更新知識項目
+ * @access Private
  */
-router.put('/:id', authenticate, requireAgentRole, (req, res) => {
-  // 臨時響應，實際實現將在知識庫控制器中完成
-  res.status(200).json({
-    message: '更新知識條目功能尚未實現',
-    data: {
-      id: req.params.id,
-      title: req.body.title || '更新後的示例知識條目',
-      content: req.body.content || '這是更新後的示例知識條目內容。',
-      updatedAt: new Date().toISOString()
-    }
-  });
-});
+router.put('/:id', authenticate, KnowledgeController.updateKnowledgeItem);
 
 /**
  * @route DELETE /api/knowledge/:id
- * @desc 刪除知識條目
- * @access Private (管理員)
+ * @desc 刪除知識項目
+ * @access Private
  */
-router.delete('/:id', authenticate, requireAdminRole, (req, res) => {
-  // 臨時響應，實際實現將在知識庫控制器中完成
-  res.status(200).json({
-    message: '刪除知識條目功能尚未實現',
-    data: {
-      id: req.params.id,
-      deleted: true
-    }
-  });
-});
+router.delete('/:id', authenticate, KnowledgeController.deleteKnowledgeItem);
 
 /**
  * @route GET /api/knowledge/search
- * @desc 搜索知識條目
+ * @desc 搜索知識項目
  * @access Private
  */
-router.get('/search', authenticate, (req, res) => {
-  // 臨時響應，實際實現將在知識庫控制器中完成
-  const query = req.query.q || '';
-  
-  res.status(200).json({
-    message: '搜索知識條目功能尚未實現',
-    data: {
-      query,
-      results: []
-    }
-  });
-});
+router.get('/search', authenticate, KnowledgeController.searchKnowledgeItems);
 
 /**
- * @route GET /api/knowledge/category/:category
- * @desc 獲取特定類別的知識條目
+ * @route GET /api/knowledge/categories
+ * @desc 獲取知識項目分類列表
  * @access Private
  */
-router.get('/category/:category', authenticate, (req, res) => {
-  // 臨時響應，實際實現將在知識庫控制器中完成
-  res.status(200).json({
-    message: '獲取特定類別知識條目功能尚未實現',
-    data: {
-      category: req.params.category,
-      items: []
-    }
-  });
-});
+router.get('/categories', authenticate, KnowledgeController.getCategories);
 
 /**
- * @route GET /api/knowledge/tag/:tag
- * @desc 獲取特定標籤的知識條目
+ * @route GET /api/knowledge/tags
+ * @desc 獲取知識項目標籤列表
  * @access Private
  */
-router.get('/tag/:tag', authenticate, (req, res) => {
-  // 臨時響應，實際實現將在知識庫控制器中完成
-  res.status(200).json({
-    message: '獲取特定標籤知識條目功能尚未實現',
-    data: {
-      tag: req.params.tag,
-      items: []
-    }
-  });
-});
+router.get('/tags', authenticate, KnowledgeController.getTags);
+
+/**
+ * @route GET /api/knowledge/sources
+ * @desc 獲取知識項目來源列表
+ * @access Private
+ */
+router.get('/sources', authenticate, KnowledgeController.getSources);
+
+/**
+ * @route POST /api/knowledge/bulk-import
+ * @desc 批量導入知識項目
+ * @access Private
+ */
+router.post('/bulk-import', authenticate, KnowledgeController.bulkImport);
+
+/**
+ * @route PUT /api/knowledge/bulk-update
+ * @desc 批量更新知識項目
+ * @access Private
+ */
+router.put('/bulk-update', authenticate, KnowledgeController.bulkUpdate);
+
+/**
+ * @route DELETE /api/knowledge/bulk-delete
+ * @desc 批量刪除知識項目
+ * @access Private
+ */
+router.delete('/bulk-delete', authenticate, KnowledgeController.bulkDelete);
+
+/**
+ * @route GET /api/knowledge/statistics
+ * @desc 獲取知識項目統計信息
+ * @access Private
+ */
+router.get('/statistics', authenticate, KnowledgeController.getStatistics);
 
 export default router;

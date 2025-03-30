@@ -1,4 +1,4 @@
-import KnowledgeItem from '../models/KnowledgeItem';
+import KnowledgeItem, { KnowledgeItemExtension } from '../models/KnowledgeItem';
 import { Message } from '../models/Message';
 import { MessageDirection } from '../types/platform';
 import logger from '../utils/logger';
@@ -278,25 +278,8 @@ class AIService {
         tags,
       } = options;
       
-      // 構建查詢條件
-      const where: any = {};
-      
-      if (categories && categories.length > 0) {
-        where.category = categories;
-      }
-      
-      if (tags && tags.length > 0) {
-        where.tags = { $overlap: tags };
-      }
-      
-      // 在實際實現中，我們需要使用向量數據庫進行相似度搜索
-      // 這裡簡化為使用關鍵字搜索
-      
-      // 查詢知識項目
-      const knowledgeItems = await KnowledgeItem.findAll({
-        where,
-        limit: maxResults,
-      });
+      // 使用 KnowledgeItemExtension 的 search 方法
+      const knowledgeItems = await KnowledgeItemExtension.search(query, maxResults, 0);
       
       // 模擬相關性排序
       // 在實際實現中，我們需要根據向量相似度進行排序
