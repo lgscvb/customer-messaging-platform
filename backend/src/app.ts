@@ -18,6 +18,9 @@ import knowledgeRoutes from './routes/knowledge';
 // import analyticsRoutes from './routes/analytics';
 import webhookRoutes from './routes/webhooks';
 import aiRoutes from './routes/ai';
+import knowledgeExtractionRoutes from './routes/knowledge-extraction';
+import knowledgeOrganizationRoutes from './routes/knowledge-organization';
+import apiConfigRoutes from './routes/api-configs';
 
 // 創建 Express 應用
 const app = express();
@@ -55,6 +58,9 @@ app.use('/api/knowledge', knowledgeRoutes);
 // app.use('/api/analytics', analyticsRoutes);
 app.use('/api/webhooks', webhookRoutes);
 app.use('/api/ai', aiRoutes);
+app.use('/api/knowledge-extraction', knowledgeExtractionRoutes);
+app.use('/api/knowledge-organization', knowledgeOrganizationRoutes);
+app.use('/api/api-configs', apiConfigRoutes);
 
 // 健康檢查端點
 app.get('/health', (req: Request, res: Response) => {
