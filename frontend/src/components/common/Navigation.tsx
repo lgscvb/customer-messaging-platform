@@ -19,7 +19,7 @@ import {
   MenuItem,
   Tooltip,
   useMediaQuery,
-  useTheme,
+  useTheme as useMuiTheme,
   Badge,
 } from '@mui/material';
 import {
@@ -40,7 +40,9 @@ import {
 } from '@mui/icons-material';
 import Logo from './Logo';
 import LanguageSwitcher from '../LanguageSwitcher';
+import ThemeSwitcher from './ThemeSwitcher';
 import { useAuth } from '../../contexts/AuthContext';
+import { useTheme } from '../../contexts/ThemeContext';
 import { UserRole } from '../../types/user';
 
 // 抽屜寬度
@@ -71,11 +73,12 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { user, logout } = useAuth();
-  const theme = useTheme();
+  const muiTheme = useMuiTheme();
+  const { mode } = useTheme();
   
   // 響應式斷點
-  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
+  const isMobile = useMediaQuery(muiTheme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(muiTheme.breakpoints.between('sm', 'md'));
   
   // 狀態
   const [open, setOpen] = React.useState(!isMobile && !isTablet);
@@ -272,6 +275,9 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
             {isMobile ? t('app.shortTitle') : t('app.title')}
           </Typography>
           
+          {/* 主題切換 */}
+          <ThemeSwitcher iconOnly={isMobile} />
+          
           {/* 語言切換 */}
           <Tooltip title={t('common.language')}>
             <IconButton
@@ -456,11 +462,11 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
           sx={{
             flexGrow: 1,
             p: 0,
-            width: { xs: '100%', sm: open ? `calc(100% - ${drawerWidth}px)` : `calc(100% - ${theme.spacing(7)})` },
+            width: { xs: '100%', sm: open ? `calc(100% - ${drawerWidth}px)` : `calc(100% - ${muiTheme.spacing(7)})` },
             mt: { xs: '56px', sm: '64px' }, // 在小屏幕上調整頂部邊距
-            transition: theme.transitions.create(['width', 'margin'], {
-              easing: theme.transitions.easing.sharp,
-              duration: theme.transitions.duration.leavingScreen,
+            transition: muiTheme.transitions.create(['width', 'margin'], {
+              easing: muiTheme.transitions.easing.sharp,
+              duration: muiTheme.transitions.duration.leavingScreen,
             }),
           }}
         >

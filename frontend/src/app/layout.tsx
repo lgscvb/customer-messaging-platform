@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import { AuthProvider } from '../contexts/AuthContext';
+import { ThemeProvider } from '../contexts/ThemeContext';
 import '../i18n'; // 導入 i18n 配置
 
 const inter = Inter({ subsets: ['latin'] });
@@ -20,11 +21,13 @@ export default function RootLayout({
   return (
     <html lang="zh-TW">
       <body className={inter.className}>
-        <AuthProvider>
-          <NotificationProvider>
-            {children}
-          </NotificationProvider>
-        </AuthProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <NotificationProvider>
+              {children}
+            </NotificationProvider>
+          </AuthProvider>
+        </ThemeProvider>
       </body>
     </html>
   );
