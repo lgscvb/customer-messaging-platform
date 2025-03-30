@@ -31,6 +31,7 @@ i18n
   // 初始化 i18next
   .init({
     resources,
+    lng: 'zh-TW', // 強制使用繁體中文作為默認語言
     fallbackLng: 'zh-TW',
     debug: process.env.NODE_ENV === 'development',
     
