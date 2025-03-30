@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "載入中...",
+    "error": "發生錯誤",
+    "save": "儲存",
+    "cancel": "取消",
+    "delete": "刪除",
+    "edit": "編輯",
+    "create": "建立",
+    "search": "搜尋",
+    "filter": "篩選",
+    "language": "語言"
+  },
+  "auth": {
+    "login": "登入",
+    "logout": "登出",
+    "register": "註冊",
+    "forgotPassword": "忘記密碼",
+    "resetPassword": "重設密碼"
+  },
+  "customer": {
+    "customer": "客戶",
+    "customers": "客戶",
+    "customerList": "客戶列表",
+    "customerDetail": "客戶詳細資訊",
+    "customerCreate": "建立客戶",
+    "customerEdit": "編輯客戶",
+    "customerDelete": "刪除客戶"
+  },
+  "message": {
+    "message": "訊息",
+    "messages": "訊息",
+    "messageList": "訊息列表",
+    "messageDetail": "訊息詳細資訊",
+    "messageCreate": "建立訊息",
+    "messageEdit": "編輯訊息",
+    "messageDelete": "刪除訊息"
+  },
+  "platform": {
+    "platform": "平台",
+    "platforms": "平台",
+    "line": "LINE",
+    "facebook": "Facebook",
+    "instagram": "Instagram",
+    "shopee": "蝦皮",
+    "website": "官網"
+  },
+  "ai": {
+    "ai": "AI",
+    "aiAssistant": "AI 助手",
+    "aiSuggestion": "AI 建議",
+    "aiResponse": "AI 回覆",
+    "aiGenerate": "AI 生成",
+    "aiAnalyze": "AI 分析"
+  },
+  "analytics": {
+    "analytics": "分析",
+    "dashboard": "儀表板",
+    "report": "報告",
+    "chart": "圖表",
+    "statistic": "統計"
+  }
+}

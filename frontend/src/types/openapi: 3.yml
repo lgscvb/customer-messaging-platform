@@ -1,0 +1,49 @@
+openapi: 3.0.0
+info:
+  title: 全通路客戶訊息管理平台 API
+  version: 1.0.0
+paths:
+  /messages:
+    get:
+      summary: 獲取訊息列表
+      responses:
+        '200':
+          description: 成功
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+                  properties:
+                    messageId:
+                      type: integer
+                    content:
+                      type: string
+                    timestamp:
+                      type: string
+    post:
+      summary: 建立新訊息
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                content:
+                  type: string
+      responses:
+        '201':
+          description: 建立成功
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  messageId:
+                    type: integer
+                  content:
+                    type: string
+                  timestamp:
+                    type: string

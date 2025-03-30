@@ -1,0 +1,63 @@
+{
+  "common": {
+    "loading": "Loading...",
+    "error": "Error occurred",
+    "save": "Save",
+    "cancel": "Cancel",
+    "delete": "Delete",
+    "edit": "Edit",
+    "create": "Create",
+    "search": "Search",
+    "filter": "Filter",
+    "language": "Language"
+  },
+  "auth": {
+    "login": "Login",
+    "logout": "Logout",
+    "register": "Register",
+    "forgotPassword": "Forgot Password",
+    "resetPassword": "Reset Password"
+  },
+  "customer": {
+    "customer": "Customer",
+    "customers": "Customers",
+    "customerList": "Customer List",
+    "customerDetail": "Customer Details",
+    "customerCreate": "Create Customer",
+    "customerEdit": "Edit Customer",
+    "customerDelete": "Delete Customer"
+  },
+  "message": {
+    "message": "Message",
+    "messages": "Messages",
+    "messageList": "Message List",
+    "messageDetail": "Message Details",
+    "messageCreate": "Create Message",
+    "messageEdit": "Edit Message",
+    "messageDelete": "Delete Message"
+  },
+  "platform": {
+    "platform": "Platform",
+    "platforms": "Platforms",
+    "line": "LINE",
+    "facebook": "Facebook",
+    "instagram": "Instagram",
+    "shopee": "Shopee",
+    "website": "Website"
+  },
+  "ai": {
+    "ai": "AI",
+    "aiAssistant": "AI Assistant",
+    "aiSuggestion": "AI Suggestion",
+    "aiResponse": "AI Response",
+    "aiGenerate": "AI Generate",
+    "aiAnalyze": "AI Analyze"
+  },
+  "analytics": {
+    "analytics": "Analytics",
+    "dashboard": "Dashboard",
+    "report": "Report",
+    "chart": "Chart",
+    "statistic": "Statistic"
+  }
+}
