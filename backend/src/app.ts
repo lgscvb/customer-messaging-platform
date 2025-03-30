@@ -10,8 +10,7 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 // 導入路由
-// 暫時註釋掉有類型問題的路由
-// import authRoutes from './routes/auth';
+import authRoutes from './routes/auth';
 // import userRoutes from './routes/users';
 import messageRoutes from './routes/messages';
 // import platformRoutes from './routes/platforms';
@@ -48,8 +47,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
 // 路由
-// 暫時註釋掉有類型問題的路由
-// app.use('/api/auth', authRoutes);
+app.use('/api/auth', authRoutes);
 // app.use('/api/users', userRoutes);
 app.use('/api/messages', messageRoutes);
 // app.use('/api/platforms', platformRoutes);
