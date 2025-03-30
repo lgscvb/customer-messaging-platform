@@ -1,41 +1,54 @@
+"use client";
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { ThemeProvider as MuiThemeProvider, createTheme } from '@mui/material/styles';
 import CssBaseline from '@mui/material/CssBaseline';
 
-// 主題類型
+/**
+ * 主題模式類型
+ */
 export type ThemeMode = 'light' | 'dark';
 
-// 主題上下文接口
+/**
+ * 主題上下文接口
+ */
 interface ThemeContextType {
   mode: ThemeMode;
   toggleTheme: () => void;
   setThemeMode: (mode: ThemeMode) => void;
 }
 
-// 創建主題上下文
-const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
-
-// 主題提供者屬性
+/**
+ * 主題提供者屬性接口
+ */
 interface ThemeProviderProps {
   children: React.ReactNode;
 }
 
 /**
+ * 創建主題上下文
+ */
+const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
+
+/**
  * 主題提供者組件
  */
 export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
-  // 從本地存儲中獲取主題模式，默認為亮色模式
+  // 從本地存儲獲取主題模式，默認為亮色模式
   const [mode, setMode] = useState<ThemeMode>('light');
 
-  // 在組件掛載時從本地存儲中獲取主題模式
+  // 在客戶端初始化時從本地存儲獲取主題模式
   useEffect(() => {
-    const savedMode = localStorage.getItem('themeMode') as ThemeMode;
-    if (savedMode) {
-      setMode(savedMode);
-    } else {
-      // 如果沒有保存的主題模式，則根據系統偏好設置
-      const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      setMode(prefersDarkMode ? 'dark' : 'light');
+    // 只在客戶端執行
+    if (typeof window !== 'undefined') {
+      const savedMode = localStorage.getItem('themeMode') as ThemeMode;
+      if (savedMode) {
+        setMode(savedMode);
+      } else {
+        // 檢查系統偏好
+        const prefersDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        setMode(prefersDarkMode ? 'dark' : 'light');
+      }
     }
   }, []);
 
@@ -43,68 +56,82 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
   const toggleTheme = () => {
     const newMode = mode === 'light' ? 'dark' : 'light';
     setMode(newMode);
-    localStorage.setItem('themeMode', newMode);
+    // 保存到本地存儲
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('themeMode', newMode);
+    }
   };
 
   // 設置主題模式
   const setThemeMode = (newMode: ThemeMode) => {
     setMode(newMode);
-    localStorage.setItem('themeMode', newMode);
+    // 保存到本地存儲
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('themeMode', newMode);
+    }
   };
 
   // 創建主題
-  const theme = React.useMemo(
-    () =>
-      createTheme({
-        palette: {
-          mode,
-          ...(mode === 'light'
-            ? {
-                // 亮色模式調色板
-                primary: {
-                  main: '#1976d2',
-                },
-                secondary: {
-                  main: '#dc004e',
-                },
-                background: {
-                  default: '#f5f5f5',
-                  paper: '#ffffff',
-                },
-              }
-            : {
-                // 暗色模式調色板
-                primary: {
-                  main: '#90caf9',
-                },
-                secondary: {
-                  main: '#f48fb1',
-                },
-                background: {
-                  default: '#121212',
-                  paper: '#1e1e1e',
-                },
-              }),
-        },
-        components: {
-          MuiAppBar: {
-            styleOverrides: {
-              root: {
-                backgroundColor: mode === 'light' ? '#1976d2' : '#272727',
-              },
+  const theme = createTheme({
+    palette: {
+      mode,
+      primary: {
+        main: '#1976d2',
+      },
+      secondary: {
+        main: '#dc004e',
+      },
+      background: {
+        default: mode === 'light' ? '#f5f5f5' : '#121212',
+        paper: mode === 'light' ? '#ffffff' : '#1e1e1e',
+      },
+    },
+    typography: {
+      fontFamily: [
+        '-apple-system',
+        'BlinkMacSystemFont',
+        '"Segoe UI"',
+        'Roboto',
+        '"Helvetica Neue"',
+        'Arial',
+        'sans-serif',
+        '"Apple Color Emoji"',
+        '"Segoe UI Emoji"',
+        '"Segoe UI Symbol"',
+      ].join(','),
+    },
+    components: {
+      MuiCssBaseline: {
+        styleOverrides: {
+          body: {
+            scrollbarColor: mode === 'dark' ? '#6b6b6b #2b2b2b' : '#959595 #f5f5f5',
+            '&::-webkit-scrollbar, & *::-webkit-scrollbar': {
+              backgroundColor: mode === 'dark' ? '#2b2b2b' : '#f5f5f5',
+              width: '8px',
+              height: '8px',
+            },
+            '&::-webkit-scrollbar-thumb, & *::-webkit-scrollbar-thumb': {
+              borderRadius: 8,
+              backgroundColor: mode === 'dark' ? '#6b6b6b' : '#959595',
+              minHeight: 24,
+            },
+            '&::-webkit-scrollbar-thumb:focus, & *::-webkit-scrollbar-thumb:focus': {
+              backgroundColor: mode === 'dark' ? '#959595' : '#6b6b6b',
+            },
+            '&::-webkit-scrollbar-thumb:active, & *::-webkit-scrollbar-thumb:active': {
+              backgroundColor: mode === 'dark' ? '#959595' : '#6b6b6b',
+            },
+            '&::-webkit-scrollbar-thumb:hover, & *::-webkit-scrollbar-thumb:hover': {
+              backgroundColor: mode === 'dark' ? '#959595' : '#6b6b6b',
+            },
+            '&::-webkit-scrollbar-corner, & *::-webkit-scrollbar-corner': {
+              backgroundColor: mode === 'dark' ? '#2b2b2b' : '#f5f5f5',
             },
           },
-          MuiDrawer: {
-            styleOverrides: {
-              paper: {
-                backgroundColor: mode === 'light' ? '#ffffff' : '#1e1e1e',
-              },
-            },
-          },
         },
-      }),
-    [mode]
-  );
+      },
+    },
+  });
 
   return (
     <ThemeContext.Provider value={{ mode, toggleTheme, setThemeMode }}>
@@ -117,7 +144,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
 };
 
 /**
- * 使用主題上下文的自定義 Hook
+ * 使用主題上下文的 Hook
  */
 export const useTheme = (): ThemeContextType => {
   const context = useContext(ThemeContext);

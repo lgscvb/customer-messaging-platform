@@ -1,8 +1,10 @@
+"use client";
+
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { io, Socket } from 'socket.io-client';
 
 /**
- * 通知類型
+ * 通知類型枚舉
  */
 export enum NotificationType {
   INFO = 'info',
@@ -12,45 +14,44 @@ export enum NotificationType {
 }
 
 /**
- * 通知介面
+ * 通知類型
  */
 export interface Notification {
   id: string;
-  type: NotificationType;
-  title: string;
+  type: NotificationType | 'info' | 'success' | 'warning' | 'error';
   message: string;
+  title?: string;
+  timestamp: Date;
   read: boolean;
-  createdAt: Date;
-  link?: string;
-  data?: Record<string, any>;
 }
 
 /**
- * 通知上下文介面
+ * 通知上下文接口
  */
 interface NotificationContextType {
   notifications: Notification[];
   unreadCount: number;
-  addNotification: (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => void;
+  addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
   markAsRead: (id: string) => void;
   markAllAsRead: () => void;
   removeNotification: (id: string) => void;
-  clearAllNotifications: () => void;
+  clearAll: () => void;
 }
 
 /**
- * 通知提供者屬性
+ * 通知提供者屬性接口
  */
 interface NotificationProviderProps {
   children: ReactNode;
 }
 
-// 創建通知上下文
+/**
+ * 創建通知上下文
+ */
 const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
 
 /**
  * 通知提供者組件
- * 管理應用程序中的所有通知
  */
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -59,51 +60,22 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   // 計算未讀通知數量
   const unreadCount = notifications.filter(notification => !notification.read).length;
   
-  // 連接 Socket.IO
-  useEffect(() => {
-    // 創建 Socket.IO 連接
-    const socketInstance = io(process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001', {
-      path: '/socket.io',
-      transports: ['websocket'],
-      withCredentials: true,
-    });
-    
-    setSocket(socketInstance);
-    
-    // 監聽通知事件
-    socketInstance.on('notification', (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => {
-      addNotification(notification);
-    });
-    
-    // 清理函數
-    return () => {
-      socketInstance.disconnect();
-    };
-  }, []);
-  
   /**
    * 添加通知
    */
-  const addNotification = (notification: Omit<Notification, 'id' | 'read' | 'createdAt'>) => {
+  const addNotification = (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
     const newNotification: Notification = {
       ...notification,
-      id: Math.random().toString(36).substring(2, 9),
+      id: Date.now().toString(),
+      timestamp: new Date(),
       read: false,
-      createdAt: new Date(),
     };
     
     setNotifications(prev => [newNotification, ...prev]);
-    
-    // 如果支持瀏覽器通知，則顯示瀏覽器通知
-    if ('Notification' in window && Notification.permission === 'granted') {
-      new Notification(notification.title, {
-        body: notification.message,
-      });
-    }
   };
   
   /**
-   * 將通知標記為已讀
+   * 標記通知為已讀
    */
   const markAsRead = (id: string) => {
     setNotifications(prev =>
@@ -114,7 +86,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
   };
   
   /**
-   * 將所有通知標記為已讀
+   * 標記所有通知為已讀
    */
   const markAllAsRead = () => {
     setNotifications(prev =>
@@ -126,45 +98,71 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
    * 移除通知
    */
   const removeNotification = (id: string) => {
-    setNotifications(prev =>
-      prev.filter(notification => notification.id !== id)
-    );
+    setNotifications(prev => prev.filter(notification => notification.id !== id));
   };
   
   /**
    * 清除所有通知
    */
-  const clearAllNotifications = () => {
+  const clearAll = () => {
     setNotifications([]);
   };
   
-  // 提供上下文值
-  const value = {
-    notifications,
-    unreadCount,
-    addNotification,
-    markAsRead,
-    markAllAsRead,
-    removeNotification,
-    clearAllNotifications,
-  };
+  /**
+   * 初始化 Socket.IO 連接
+   */
+  useEffect(() => {
+    // 只在客戶端執行
+    if (typeof window !== 'undefined') {
+      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
+      const newSocket = io(apiUrl, {
+        path: '/socket.io',
+        transports: ['websocket'],
+      });
+      
+      setSocket(newSocket);
+      
+      // 監聽通知事件
+      newSocket.on('notification', (data: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
+        addNotification(data);
+      });
+      
+      // 清理函數
+      return () => {
+        newSocket.disconnect();
+      };
+    }
+  }, []);
   
   return (
-    <NotificationContext.Provider value={value}>
+    <NotificationContext.Provider
+      value={{
+        notifications,
+        unreadCount,
+        addNotification,
+        markAsRead,
+        markAllAsRead,
+        removeNotification,
+        clearAll,
+      }}
+    >
       {children}
     </NotificationContext.Provider>
   );
 };
 
 /**
- * 使用通知上下文的自定義 Hook
+ * 使用通知上下文的 Hook
  */
-export const useNotifications = (): NotificationContextType => {
+export const useNotification = (): NotificationContextType => {
   const context = useContext(NotificationContext);
-  
   if (context === undefined) {
-    throw new Error('useNotifications must be used within a NotificationProvider');
+    throw new Error('useNotification must be used within a NotificationProvider');
   }
-  
   return context;
 };
+
+/**
+ * 為了兼容性，提供 useNotifications 別名
+ */
+export const useNotifications = useNotification;

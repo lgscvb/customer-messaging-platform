@@ -1,5 +1,5 @@
 import React from 'react';
-import { Button, Tooltip } from '@mui/material';
+import { Button, Tooltip, ButtonProps } from '@mui/material';
 import { Refresh as RefreshIcon } from '@mui/icons-material';
 import { useNotifications, NotificationType } from '../../contexts/NotificationContext';
 import platformConnectionService from '../../services/platformConnectionService';
@@ -87,12 +87,12 @@ const PlatformSyncButton: React.FC<PlatformSyncButtonProps> = ({
       <Tooltip title="同步平台數據">
         <span>
           <Button
-            variant={variant}
+            variant={variant as ButtonProps['variant']}
             color="primary"
             startIcon={<RefreshIcon />}
             onClick={handleSync}
             disabled={disabled || loading}
-            size={size}
+            size={size as ButtonProps['size']}
             fullWidth={fullWidth}
           >
             {loading ? '同步中...' : '同步數據'}

@@ -1,3 +1,5 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
@@ -594,7 +596,7 @@ const LinePlatformForm: React.FC<LinePlatformFormProps> = ({
                       <IconButton
                         onClick={() => copyToClipboard(getWebhookUrl(), 'webhook')}
                         edge="end"
-                        color={copied === 'webhook' ? 'success' : 'default'}
+                        color={copied === 'webhook' ? 'success' : 'inherit'}
                       >
                         {copied === 'webhook' ? <CheckIcon /> : <CopyIcon />}
                       </IconButton>
