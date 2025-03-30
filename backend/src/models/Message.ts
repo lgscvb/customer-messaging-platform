@@ -1,155 +1,159 @@
-import pool from '../config/database';
-import { QueryResult } from 'pg';
+import { Model, DataTypes, Optional } from 'sequelize';
+import sequelize from '../config/database';
+import { PlatformType, MessageDirection, MessageType } from '../types/platform';
+import { Customer } from './Customer';
 
-export enum MessagePlatform {
-  LINE = 'line',
-  WEBSITE = 'website',
-  META = 'meta',
-  SHOPEE = 'shopee',
-}
-
-export enum MessageDirection {
-  INBOUND = 'inbound',   // 客戶發送的訊息
-  OUTBOUND = 'outbound', // 客服發送的訊息
-}
-
-export enum MessageStatus {
-  PENDING = 'pending',   // 等待處理
-  READ = 'read',         // 已讀
-  REPLIED = 'replied',   // 已回覆
-  ARCHIVED = 'archived', // 已歸檔
-}
-
-export interface Message {
+/**
+ * 消息屬性接口
+ */
+interface MessageAttributes {
   id: string;
   customerId: string;
-  platform: MessagePlatform;
   direction: MessageDirection;
-  content: string;
-  contentType: string;
-  status: MessageStatus;
+  platformType: PlatformType;
+  messageType: MessageType;
+  content: string | null;
   metadata: Record<string, any>;
+  isRead: boolean;
+  readAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
 
-export interface CreateMessageDTO {
-  customerId: string;
-  platform: MessagePlatform;
-  direction: MessageDirection;
-  content: string;
-  contentType: string;
-  status?: MessageStatus;
-  metadata?: Record<string, any>;
+/**
+ * 創建消息時的可選屬性
+ */
+interface MessageCreationAttributes extends Optional<MessageAttributes, 'id' | 'isRead' | 'readAt' | 'createdAt' | 'updatedAt'> {}
+
+/**
+ * 消息模型類
+ */
+class Message extends Model<MessageAttributes, MessageCreationAttributes> implements MessageAttributes {
+  public id!: string;
+  public customerId!: string;
+  public direction!: MessageDirection;
+  public platformType!: PlatformType;
+  public messageType!: MessageType;
+  public content!: string | null;
+  public metadata!: Record<string, any>;
+  public isRead!: boolean;
+  public readAt!: Date | null;
+  public createdAt!: Date;
+  public updatedAt!: Date;
+  
+  // 關聯
+  public customer?: Customer;
 }
 
-class MessageModel {
-  /**
-   * 創建訊息
-   */
-  async create(message: CreateMessageDTO): Promise<Message> {
-    const { customerId, platform, direction, content, contentType, status = MessageStatus.PENDING, metadata = {} } = message;
-    
-    const query = `
-      INSERT INTO messages (
-        customer_id, platform, direction, content, content_type, status, metadata
-      ) VALUES ($1, $2, $3, $4, $5, $6, $7)
-      RETURNING *
-    `;
-    
-    const values = [customerId, platform, direction, content, contentType, status, metadata];
-    
-    try {
-      const result: QueryResult = await pool.query(query, values);
-      return this.mapToMessage(result.rows[0]);
-    } catch (error) {
-      console.error('創建訊息錯誤:', error);
-      throw error;
-    }
+// 初始化消息模型
+Message.init(
+  {
+    id: {
+      type: DataTypes.UUID,
+      defaultValue: DataTypes.UUIDV4,
+      primaryKey: true,
+    },
+    customerId: {
+      type: DataTypes.UUID,
+      allowNull: false,
+      references: {
+        model: 'customers',
+        key: 'id',
+      },
+    },
+    direction: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        isIn: [Object.values(MessageDirection)],
+      },
+    },
+    platformType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        isIn: [Object.values(PlatformType)],
+      },
+    },
+    messageType: {
+      type: DataTypes.STRING,
+      allowNull: false,
+      validate: {
+        isIn: [Object.values(MessageType)],
+      },
+    },
+    content: {
+      type: DataTypes.TEXT,
+      allowNull: true,
+    },
+    metadata: {
+      type: DataTypes.JSONB,
+      allowNull: false,
+      defaultValue: {},
+    },
+    isRead: {
+      type: DataTypes.BOOLEAN,
+      allowNull: false,
+      defaultValue: false,
+    },
+    readAt: {
+      type: DataTypes.DATE,
+      allowNull: true,
+    },
+    createdAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
+    updatedAt: {
+      type: DataTypes.DATE,
+      allowNull: false,
+      defaultValue: DataTypes.NOW,
+    },
+  },
+  {
+    sequelize,
+    modelName: 'Message',
+    tableName: 'messages',
+    timestamps: true,
+    indexes: [
+      {
+        name: 'messages_customer_id_idx',
+        fields: ['customer_id'],
+      },
+      {
+        name: 'messages_platform_type_idx',
+        fields: ['platform_type'],
+      },
+      {
+        name: 'messages_message_type_idx',
+        fields: ['message_type'],
+      },
+      {
+        name: 'messages_direction_idx',
+        fields: ['direction'],
+      },
+      {
+        name: 'messages_is_read_idx',
+        fields: ['is_read'],
+      },
+      {
+        name: 'messages_created_at_idx',
+        fields: ['created_at'],
+      },
+    ],
   }
+);
 
-  /**
-   * 根據ID查詢訊息
-   */
-  async findById(id: string): Promise<Message | null> {
-    const query = 'SELECT * FROM messages WHERE id = $1';
-    
-    try {
-      const result: QueryResult = await pool.query(query, [id]);
-      
-      if (result.rows.length === 0) {
-        return null;
-      }
-      
-      return this.mapToMessage(result.rows[0]);
-    } catch (error) {
-      console.error('查詢訊息錯誤:', error);
-      throw error;
-    }
-  }
+// 設置關聯
+Message.belongsTo(Customer, {
+  foreignKey: 'customerId',
+  as: 'customer',
+});
 
-  /**
-   * 查詢客戶的訊息
-   */
-  async findByCustomerId(customerId: string, limit: number = 50, offset: number = 0): Promise<Message[]> {
-    const query = `
-      SELECT * FROM messages 
-      WHERE customer_id = $1 
-      ORDER BY created_at DESC 
-      LIMIT $2 OFFSET $3
-    `;
-    
-    try {
-      const result: QueryResult = await pool.query(query, [customerId, limit, offset]);
-      return result.rows.map(row => this.mapToMessage(row));
-    } catch (error) {
-      console.error('查詢客戶訊息錯誤:', error);
-      throw error;
-    }
-  }
+Customer.hasMany(Message, {
+  foreignKey: 'customerId',
+  as: 'messages',
+});
 
-  /**
-   * 更新訊息狀態
-   */
-  async updateStatus(id: string, status: MessageStatus): Promise<Message | null> {
-    const query = `
-      UPDATE messages 
-      SET status = $1, updated_at = NOW() 
-      WHERE id = $2 
-      RETURNING *
-    `;
-    
-    try {
-      const result: QueryResult = await pool.query(query, [status, id]);
-      
-      if (result.rows.length === 0) {
-        return null;
-      }
-      
-      return this.mapToMessage(result.rows[0]);
-    } catch (error) {
-      console.error('更新訊息狀態錯誤:', error);
-      throw error;
-    }
-  }
-
-  /**
-   * 將資料庫行映射到訊息對象
-   */
-  private mapToMessage(row: any): Message {
-    return {
-      id: row.id,
-      customerId: row.customer_id,
-      platform: row.platform,
-      direction: row.direction,
-      content: row.content,
-      contentType: row.content_type,
-      status: row.status,
-      metadata: row.metadata,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
-    };
-  }
-}
-
-export default new MessageModel();
+export { Message };

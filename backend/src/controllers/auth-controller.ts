@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 import AuthService, { LoginRequestDTO, RegisterRequestDTO } from '../services/auth-service';
 import { UserRole } from '../models/User';
 
@@ -11,7 +11,7 @@ class AuthController {
    * 用戶登錄
    * @route POST /api/auth/login
    */
-  async login(req: Request, res: Response): Promise<void> {
+  login = async (req: Request, res: Response): Promise<void> => {
     try {
       const loginData: LoginRequestDTO = req.body;
       
@@ -41,7 +41,7 @@ class AuthController {
    * 用戶註冊
    * @route POST /api/auth/register
    */
-  async register(req: Request, res: Response): Promise<void> {
+  register = async (req: Request, res: Response): Promise<void> => {
     try {
       const registerData: RegisterRequestDTO = req.body;
       
@@ -110,7 +110,7 @@ class AuthController {
    * 重置密碼
    * @route POST /api/auth/reset-password
    */
-  async resetPassword(req: Request, res: Response): Promise<void> {
+  resetPassword = async (req: Request, res: Response): Promise<void> => {
     try {
       const { userId, newPassword } = req.body;
       
@@ -156,7 +156,7 @@ class AuthController {
    * 更改密碼
    * @route POST /api/auth/change-password
    */
-  async changePassword(req: Request, res: Response): Promise<void> {
+  changePassword = async (req: Request, res: Response): Promise<void> => {
     try {
       const { currentPassword, newPassword } = req.body;
       
@@ -201,7 +201,7 @@ class AuthController {
    * 獲取當前用戶信息
    * @route GET /api/auth/me
    */
-  async getCurrentUser(req: Request, res: Response): Promise<void> {
+  getCurrentUser = async (req: Request, res: Response): Promise<void> => {
     try {
       // 檢查用戶是否已認證
       if (!req.user) {
@@ -237,22 +237,12 @@ class AuthController {
    * 登出
    * @route POST /api/auth/logout
    */
-  async logout(req: Request, res: Response): Promise<void> {
+  logout = async (req: Request, res: Response): Promise<void> => {
     // 由於使用 JWT，服務器端不需要做任何操作
     // 客戶端需要刪除本地存儲的令牌
     res.status(200).json({ message: '登出成功' });
   }
 }
 
-// 創建控制器實例
-const authController = new AuthController();
-
-// 導出控制器方法
-export default {
-  login: (req: Request, res: Response) => authController.login(req, res),
-  register: (req: Request, res: Response) => authController.register(req, res),
-  resetPassword: (req: Request, res: Response) => authController.resetPassword(req, res),
-  changePassword: (req: Request, res: Response) => authController.changePassword(req, res),
-  getCurrentUser: (req: Request, res: Response) => authController.getCurrentUser(req, res),
-  logout: (req: Request, res: Response) => authController.logout(req, res)
-};
+// 導出控制器實例
+export default new AuthController();

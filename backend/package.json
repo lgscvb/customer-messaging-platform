@@ -25,6 +25,7 @@
   "dependencies": {
     "@langchain/openai": "^0.0.14",
     "@line/bot-sdk": "^8.0.0",
+    "@types/winston": "^2.4.4",
     "axios": "^1.6.2",
     "bcrypt": "^5.1.1",
     "cors": "^2.8.5",
@@ -35,7 +36,8 @@
     "langchain": "^0.1.17",
     "morgan": "^1.10.0",
     "pg": "^8.11.3",
-    "socket.io": "^4.7.2"
+    "socket.io": "^4.7.2",
+    "winston": "^3.17.0"
   },
   "devDependencies": {
     "@types/bcrypt": "^5.0.2",

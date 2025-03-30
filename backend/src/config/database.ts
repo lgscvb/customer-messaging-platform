@@ -1,42 +1,59 @@
-import { Pool, PoolClient, QueryResult } from 'pg';
+import { Sequelize } from 'sequelize';
 import dotenv from 'dotenv';
 
-// 載入環境變數
+// 加載環境變量
 dotenv.config();
 
-// 創建 PostgreSQL 連接池
-const pool = new Pool({
+// 數據庫配置
+const dbConfig = {
   host: process.env.DB_HOST || 'localhost',
-  port: parseInt(process.env.DB_PORT || '5432'),
+  port: parseInt(process.env.DB_PORT || '5432', 10),
   database: process.env.DB_NAME || 'customer_messaging',
-  user: process.env.DB_USER || 'postgres',
+  username: process.env.DB_USER || 'postgres',
   password: process.env.DB_PASSWORD || 'postgres',
-  max: 20, // 最大連接數
-  idleTimeoutMillis: 30000, // 連接最大閒置時間
-  connectionTimeoutMillis: 2000, // 連接超時時間
-});
-
-// 測試資料庫連接
-pool.connect((err, client, done) => {
-  if (err) {
-    console.error('資料庫連接錯誤:', err.message);
-    return;
+  dialect: 'postgres',
+  logging: process.env.NODE_ENV !== 'production' ? console.log : false,
+  pool: {
+    max: 10,
+    min: 0,
+    acquire: 30000,
+    idle: 10000
   }
-  if (client) {
-    client.query('SELECT NOW()', (err, result) => {
-      done();
-      if (err) {
-        console.error('資料庫查詢錯誤:', err.message);
-        return;
-      }
-      console.log('資料庫連接成功:', result.rows[0]);
-    });
+};
+
+// 創建 Sequelize 實例
+const sequelize = new Sequelize(
+  dbConfig.database,
+  dbConfig.username,
+  dbConfig.password,
+  {
+    host: dbConfig.host,
+    port: dbConfig.port,
+    dialect: 'postgres',
+    logging: dbConfig.logging,
+    pool: dbConfig.pool,
+    define: {
+      timestamps: true,
+      underscored: true,
+      freezeTableName: false,
+      charset: 'utf8'
+    }
   }
-});
+);
 
-// 處理連接池錯誤
-pool.on('error', (err) => {
-  console.error('資料庫連接池錯誤:', err.message);
-});
+// 測試數據庫連接
+const testConnection = async () => {
+  try {
+    await sequelize.authenticate();
+    console.log('數據庫連接成功');
+  } catch (error) {
+    console.error('無法連接到數據庫:', error);
+  }
+};
 
-export default pool;
+// 在非測試環境下測試連接
+if (process.env.NODE_ENV !== 'test') {
+  testConnection();
+}
+
+export default sequelize;

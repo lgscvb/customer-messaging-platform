@@ -1,156 +1,542 @@
 import axios from 'axios';
-import { Client, ClientConfig, MessageAPIResponseBase, TextMessage } from '@line/bot-sdk';
-import MessageModel, { MessagePlatform, MessageDirection, CreateMessageDTO } from '../models/Message';
-import CustomerModel from '../models/Customer';
-import CustomerPlatformModel from '../models/CustomerPlatform';
+import { Client, ClientConfig, MessageAPIResponseBase, TextMessage, WebhookEvent } from '@line/bot-sdk';
+import { Message } from '../models/Message';
+import { Customer } from '../models/Customer';
+import { CustomerPlatform } from '../models/CustomerPlatform';
+import { PlatformType, MessageDirection, MessageType } from '../types/platform';
+import logger from '../utils/logger';
 
 /**
- * LINE 平台連接器
- * 處理 LINE 平台的訊息收發
+ * LINE 平台配置
+ */
+export interface LineConfig {
+  channelAccessToken: string;
+  channelSecret: string;
+  apiEndpoint?: string;
+}
+
+/**
+ * LINE 消息類型
+ */
+enum LineMessageType {
+  TEXT = 'text',
+  IMAGE = 'image',
+  VIDEO = 'video',
+  AUDIO = 'audio',
+  LOCATION = 'location',
+  STICKER = 'sticker',
+  TEMPLATE = 'template',
+  FLEX = 'flex',
+}
+
+/**
+ * LINE 連接器
+ * 處理與 LINE 平台的通信
  */
 class LineConnector {
   private client: Client;
+  private config: LineConfig;
   
-  constructor() {
-    const config: ClientConfig = {
-      channelAccessToken: process.env.LINE_CHANNEL_ACCESS_TOKEN || '',
-      channelSecret: process.env.LINE_CHANNEL_SECRET || '',
+  /**
+   * 構造函數
+   * @param config LINE 平台配置
+   */
+  constructor(config: LineConfig) {
+    this.config = config;
+    
+    const clientConfig: any = {
+      channelAccessToken: config.channelAccessToken,
+      channelSecret: config.channelSecret,
     };
     
-    this.client = new Client(config);
+    if (config.apiEndpoint) {
+      clientConfig.apiEndpoint = config.apiEndpoint;
+    }
+    
+    this.client = new Client(clientConfig);
   }
   
   /**
    * 處理 LINE Webhook 事件
+   * @param events LINE Webhook 事件
    */
-  async handleWebhook(body: any): Promise<void> {
+  async handleWebhook(events: WebhookEvent[]): Promise<void> {
     try {
-      const events = body.events;
-      
-      if (!events || events.length === 0) {
-        return;
-      }
-      
-      // 處理每個事件
       for (const event of events) {
-        if (event.type === 'message' && event.message.type === 'text') {
-          await this.handleTextMessage(event);
+        await this.processEvent(event);
+      }
+    } catch (error) {
+      logger.error('處理 LINE Webhook 事件錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理單個 LINE 事件
+   * @param event LINE 事件
+   */
+  private async processEvent(event: WebhookEvent): Promise<void> {
+    try {
+      // 處理消息事件
+      if (event.type === 'message') {
+        const { replyToken, source, message } = event as any;
+        
+        // 獲取或創建客戶
+        const customer = await this.getOrCreateCustomer(source.userId as string);
+        
+        // 處理不同類型的消息
+        switch (message.type) {
+          case LineMessageType.TEXT:
+            await this.handleTextMessage(replyToken, customer, message.text);
+            break;
+          case LineMessageType.IMAGE:
+            await this.handleImageMessage(replyToken, customer);
+            break;
+          case LineMessageType.VIDEO:
+            await this.handleVideoMessage(replyToken, customer);
+            break;
+          case LineMessageType.AUDIO:
+            await this.handleAudioMessage(replyToken, customer);
+            break;
+          case LineMessageType.LOCATION:
+            await this.handleLocationMessage(replyToken, customer);
+            break;
+          case LineMessageType.STICKER:
+            await this.handleStickerMessage(replyToken, customer);
+            break;
+          default:
+            await this.handleUnsupportedMessage(replyToken, customer);
+            break;
+        }
+        
+        // 保存消息到數據庫
+        await this.saveMessage(customer.id, message);
+      }
+      // 處理關注事件
+      else if (event.type === 'follow') {
+        await this.handleFollowEvent(event as any);
+      }
+      // 處理取消關注事件
+      else if (event.type === 'unfollow') {
+        await this.handleUnfollowEvent(event);
+      }
+      // 處理加入群組事件
+      else if (event.type === 'join') {
+        await this.handleJoinEvent(event as any);
+      }
+      // 處理離開群組事件
+      else if (event.type === 'leave') {
+        await this.handleLeaveEvent(event);
+      }
+      // 處理其他事件
+      else {
+        logger.info(`未處理的 LINE 事件類型: ${event.type}`);
+      }
+    } catch (error) {
+      logger.error('處理 LINE 事件錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理文本消息
+   * @param replyToken 回覆令牌
+   * @param customer 客戶
+   * @param text 文本內容
+   */
+  private async handleTextMessage(replyToken: string, customer: Customer, text: string): Promise<void> {
+    try {
+      // 創建回覆消息
+      const replyMessage: TextMessage = {
+        type: 'text',
+        text: `收到您的消息: ${text}`,
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, replyMessage);
+      
+      logger.info(`已回覆客戶 ${customer.id} 的文本消息`);
+    } catch (error) {
+      logger.error('處理文本消息錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理圖片消息
+   * @param replyToken 回覆令牌
+   * @param customer 客戶
+   */
+  private async handleImageMessage(replyToken: string, customer: Customer): Promise<void> {
+    try {
+      // 創建回覆消息
+      const replyMessage: TextMessage = {
+        type: 'text',
+        text: '收到您的圖片',
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, replyMessage);
+      
+      logger.info(`已回覆客戶 ${customer.id} 的圖片消息`);
+    } catch (error) {
+      logger.error('處理圖片消息錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理視頻消息
+   * @param replyToken 回覆令牌
+   * @param customer 客戶
+   */
+  private async handleVideoMessage(replyToken: string, customer: Customer): Promise<void> {
+    try {
+      // 創建回覆消息
+      const replyMessage: TextMessage = {
+        type: 'text',
+        text: '收到您的視頻',
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, replyMessage);
+      
+      logger.info(`已回覆客戶 ${customer.id} 的視頻消息`);
+    } catch (error) {
+      logger.error('處理視頻消息錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理音頻消息
+   * @param replyToken 回覆令牌
+   * @param customer 客戶
+   */
+  private async handleAudioMessage(replyToken: string, customer: Customer): Promise<void> {
+    try {
+      // 創建回覆消息
+      const replyMessage: TextMessage = {
+        type: 'text',
+        text: '收到您的語音',
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, replyMessage);
+      
+      logger.info(`已回覆客戶 ${customer.id} 的音頻消息`);
+    } catch (error) {
+      logger.error('處理音頻消息錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理位置消息
+   * @param replyToken 回覆令牌
+   * @param customer 客戶
+   */
+  private async handleLocationMessage(replyToken: string, customer: Customer): Promise<void> {
+    try {
+      // 創建回覆消息
+      const replyMessage: TextMessage = {
+        type: 'text',
+        text: '收到您的位置',
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, replyMessage);
+      
+      logger.info(`已回覆客戶 ${customer.id} 的位置消息`);
+    } catch (error) {
+      logger.error('處理位置消息錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理貼圖消息
+   * @param replyToken 回覆令牌
+   * @param customer 客戶
+   */
+  private async handleStickerMessage(replyToken: string, customer: Customer): Promise<void> {
+    try {
+      // 創建回覆消息
+      const replyMessage: TextMessage = {
+        type: 'text',
+        text: '收到您的貼圖',
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, replyMessage);
+      
+      logger.info(`已回覆客戶 ${customer.id} 的貼圖消息`);
+    } catch (error) {
+      logger.error('處理貼圖消息錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理不支持的消息類型
+   * @param replyToken 回覆令牌
+   * @param customer 客戶
+   */
+  private async handleUnsupportedMessage(replyToken: string, customer: Customer): Promise<void> {
+    try {
+      // 創建回覆消息
+      const replyMessage: TextMessage = {
+        type: 'text',
+        text: '抱歉，我們暫時無法處理這種類型的消息',
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, replyMessage);
+      
+      logger.info(`已回覆客戶 ${customer.id} 的不支持消息類型`);
+    } catch (error) {
+      logger.error('處理不支持消息類型錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理關注事件
+   * @param event 關注事件
+   */
+  private async handleFollowEvent(event: any): Promise<void> {
+    try {
+      const { replyToken, source } = event;
+      
+      // 獲取或創建客戶
+      const customer = await this.getOrCreateCustomer(source.userId as string);
+      
+      // 創建歡迎消息
+      const welcomeMessage: TextMessage = {
+        type: 'text',
+        text: '感謝您關注我們！我們將為您提供最優質的服務。',
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, welcomeMessage);
+      
+      logger.info(`已處理客戶 ${customer.id} 的關注事件`);
+    } catch (error) {
+      logger.error('處理關注事件錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理取消關注事件
+   * @param event 取消關注事件
+   */
+  private async handleUnfollowEvent(event: WebhookEvent): Promise<void> {
+    try {
+      const { source } = event;
+      
+      // 更新客戶狀態
+      await this.updateCustomerStatus(source.userId as string, 'inactive');
+      
+      logger.info(`已處理客戶 ${source.userId} 的取消關注事件`);
+    } catch (error) {
+      logger.error('處理取消關注事件錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理加入群組事件
+   * @param event 加入群組事件
+   */
+  private async handleJoinEvent(event: any): Promise<void> {
+    try {
+      const { replyToken, source } = event;
+      
+      // 創建歡迎消息
+      const welcomeMessage: TextMessage = {
+        type: 'text',
+        text: '感謝您邀請我加入群組！我將為大家提供最優質的服務。',
+      };
+      
+      // 回覆消息
+      await this.client.replyMessage(replyToken, welcomeMessage);
+      
+      logger.info(`已處理加入群組事件: ${source.type === 'group' ? source.groupId : 'unknown'}`);
+    } catch (error) {
+      logger.error('處理加入群組事件錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 處理離開群組事件
+   * @param event 離開群組事件
+   */
+  private async handleLeaveEvent(event: WebhookEvent): Promise<void> {
+    try {
+      const { source } = event;
+      
+      logger.info(`已處理離開群組事件: ${source.type === 'group' ? (source as any).groupId : 'unknown'}`);
+    } catch (error) {
+      logger.error('處理離開群組事件錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 發送消息
+   * @param to 接收者 ID
+   * @param text 消息文本
+   */
+  async sendMessage(to: string, text: string): Promise<MessageAPIResponseBase> {
+    try {
+      // 創建消息
+      const message: TextMessage = {
+        type: 'text',
+        text,
+      };
+      
+      // 發送消息
+      const response = await this.client.pushMessage(to, message);
+      
+      logger.info(`已發送消息給客戶 ${to}`);
+      
+      return response;
+    } catch (error) {
+      logger.error('發送消息錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 獲取用戶資料
+   * @param userId 用戶 ID
+   */
+  async getUserProfile(userId: string): Promise<any> {
+    try {
+      // 獲取用戶資料
+      const profile = await this.client.getProfile(userId);
+      
+      logger.info(`已獲取客戶 ${userId} 的資料`);
+      
+      return profile;
+    } catch (error) {
+      logger.error('獲取用戶資料錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 獲取或創建客戶
+   * @param userId LINE 用戶 ID
+   */
+  private async getOrCreateCustomer(userId: string): Promise<Customer> {
+    try {
+      // 查詢客戶平台
+      const customerPlatform = await CustomerPlatform.findOne({
+        where: {
+          platformId: userId,
+          platformType: PlatformType.LINE,
+        },
+      });
+      
+      // 如果客戶平台存在，返回客戶
+      if (customerPlatform) {
+        const customer = await Customer.findByPk(customerPlatform.customerId);
+        if (customer) {
+          return customer;
         }
       }
-    } catch (error) {
-      console.error('處理 LINE Webhook 錯誤:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * 處理文字訊息
-   */
-  private async handleTextMessage(event: any): Promise<void> {
-    try {
-      const { replyToken, source, message } = event;
-      const userId = source.userId;
-      const text = message.text;
       
-      // 查找或創建客戶
-      const customer = await this.findOrCreateCustomer(userId);
+      // 獲取用戶資料
+      const profile = await this.getUserProfile(userId);
       
-      // 創建訊息記錄
-      const messageData: CreateMessageDTO = {
+      // 創建客戶
+      const customer = await Customer.create({
+        name: profile.displayName,
+        email: null,
+        phone: null,
+        status: 'active',
+        metadata: {
+          lineProfile: profile,
+        },
+      });
+      
+      // 創建客戶平台
+      await CustomerPlatform.create({
         customerId: customer.id,
-        platform: MessagePlatform.LINE,
-        direction: MessageDirection.INBOUND,
-        content: text,
-        contentType: 'text',
-      };
+        platformId: userId,
+        platformType: PlatformType.LINE,
+        platformData: {
+          profile,
+        },
+      });
       
-      await MessageModel.create(messageData);
+      logger.info(`已創建客戶 ${customer.id} 的 LINE 平台關聯`);
       
-      // 更新客戶最後互動時間
-      await CustomerModel.updateLastInteraction(customer.id);
-      
-      // 這裡可以添加自動回覆邏輯
-      // 例如，使用 AI 服務生成回覆
-      
-      // 暫時使用簡單的回覆
-      await this.replyMessage(replyToken, `收到您的訊息：${text}`);
+      return customer;
     } catch (error) {
-      console.error('處理文字訊息錯誤:', error);
+      logger.error('獲取或創建客戶錯誤:', error);
       throw error;
     }
   }
   
   /**
-   * 查找或創建客戶
-   * 使用新的 CustomerPlatformModel 實現，確保操作的原子性
+   * 更新客戶狀態
+   * @param userId LINE 用戶 ID
+   * @param status 狀態
    */
-  private async findOrCreateCustomer(lineUserId: string): Promise<{ id: string }> {
+  private async updateCustomerStatus(userId: string, status: string): Promise<void> {
     try {
-      // 查詢客戶平台關聯
-      const platformInfo = await CustomerPlatformModel.findByPlatformId('line', lineUserId);
+      // 查詢客戶平台
+      const customerPlatform = await CustomerPlatform.findOne({
+        where: {
+          platformId: userId,
+          platformType: PlatformType.LINE,
+        },
+      });
       
-      // 如果已存在關聯，直接返回客戶ID
-      if (platformInfo) {
-        return { id: platformInfo.customerId };
+      // 如果客戶平台存在，更新客戶狀態
+      if (customerPlatform) {
+        await Customer.update(
+          { status },
+          { where: { id: customerPlatform.customerId } }
+        );
+        
+        logger.info(`已更新客戶 ${customerPlatform.customerId} 的狀態為 ${status}`);
       }
-      
-      // 獲取 LINE 用戶資料
-      const lineProfile = await this.client.getProfile(lineUserId);
-      
-      // 創建新客戶
-      const newCustomer = await CustomerModel.create({
-        name: lineProfile.displayName,
-      });
-      
-      // 創建客戶平台關聯
-      await CustomerPlatformModel.create({
-        customerId: newCustomer.id,
-        platform: 'line',
-        platformId: lineUserId,
-        displayName: lineProfile.displayName,
-        profileImage: lineProfile.pictureUrl,
-      });
-      
-      return { id: newCustomer.id };
     } catch (error) {
-      console.error('查找或創建客戶錯誤:', error);
+      logger.error('更新客戶狀態錯誤:', error);
       throw error;
     }
   }
   
   /**
-   * 回覆訊息
+   * 保存消息
+   * @param customerId 客戶 ID
+   * @param message LINE 消息
    */
-  async replyMessage(replyToken: string, text: string): Promise<MessageAPIResponseBase> {
+  private async saveMessage(customerId: string, message: any): Promise<void> {
     try {
-      const message: TextMessage = {
-        type: 'text',
-        text: text,
-      };
+      // 創建消息
+      await Message.create({
+        customerId,
+        direction: MessageDirection.INBOUND,
+        platformType: PlatformType.LINE,
+        messageType: message.type === LineMessageType.TEXT ? MessageType.TEXT : MessageType.OTHER,
+        content: message.type === LineMessageType.TEXT ? message.text : null,
+        metadata: {
+          lineMessage: message,
+        },
+      });
       
-      return await this.client.replyMessage(replyToken, message);
+      logger.info(`已保存客戶 ${customerId} 的 LINE 消息`);
     } catch (error) {
-      console.error('回覆訊息錯誤:', error);
-      throw error;
-    }
-  }
-  
-  /**
-   * 發送訊息
-   */
-  async sendMessage(lineUserId: string, text: string): Promise<MessageAPIResponseBase> {
-    try {
-      const message: TextMessage = {
-        type: 'text',
-        text: text,
-      };
-      
-      return await this.client.pushMessage(lineUserId, message);
-    } catch (error) {
-      console.error('發送訊息錯誤:', error);
+      logger.error('保存消息錯誤:', error);
       throw error;
     }
   }
 }
 
-export default new LineConnector();
+export default LineConnector;

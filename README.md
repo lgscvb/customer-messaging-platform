@@ -1,219 +1,227 @@
 # 全通路客戶訊息管理平台
 
-全通路客戶訊息管理平台是一個整合多平台客戶訊息的系統，支援 LINE、Meta、蝦皮、官網等渠道，並提供 AI 輔助回覆與導購功能。
+全通路客戶訊息管理平台是一個整合多平台客戶訊息的系統，支援 LINE、Facebook、官網等渠道，並提供 AI 輔助回覆與導購功能。
 
 ## 核心功能
 
-- **多平台訊息整合**：統一管理來自 LINE、Meta、蝦皮、官網等平台的客戶訊息
-- **AI 輔助回覆**：使用先進的 AI 技術生成專業回覆建議
-- **導購功能**：智能推薦產品，提高銷售轉化率
-- **客戶資料庫**：建立完整的客戶資料，提供 360° 客戶視圖
-- **知識管理**：沉澱企業知識，實現知識共享
-- **監督式學習**：系統持續從人工修改中學習，不斷提升 AI 回覆品質
+- **多平台訊息整合**：統一管理來自 LINE、Facebook、官網等平台的客戶訊息
+- **AI 輔助回覆**：使用 RAG 技術提供智能回覆建議
+- **客戶資料庫**：建立完整的客戶檔案，包含跨平台互動記錄
+- **知識管理**：自動沉澱專業知識，形成企業知識庫
+- **監督式學習**：透過人工審核持續優化 AI 回覆品質
 
 ## 技術架構
 
 ### 前端技術
 
-- **框架**：Next.js (React)
-- **UI 元件**：Material UI
-- **狀態管理**：Redux Toolkit
-- **即時通訊**：Socket.IO
-- **國際化**：i18next
-- **圖表**：Chart.js
+- 框架：React.js
+- UI 元件：Material UI
+- 即時通訊：WebSocket
+- 狀態管理：Redux
+- 國際化：i18next
 
 ### 後端技術
 
-- **伺服器**：Node.js (Express)
-- **資料庫**：
+- 伺服器：Node.js + Express
+- 資料庫：
   - 關聯式資料庫：PostgreSQL
-  - 向量資料庫：Milvus (用於 RAG)
-- **訊息佇列**：Redis
-- **容器化**：Docker 與 Kubernetes
+  - 向量資料庫：Pinecone
+- 訊息佇列：RabbitMQ
+- 容器化：Docker 與 Kubernetes
 
 ### AI 與機器學習
 
-- **大語言模型**：OpenAI (GPT-4)
-- **RAG (檢索增強生成)**：LangChain
-- **向量嵌入**：OpenAI Embeddings API
+- 大語言模型：Google Vertex AI (PaLM 2) 或 OpenAI (GPT-4)
+- RAG (檢索增強生成)：LangChain
+- 向量嵌入：Google Text Embeddings API
+
+## 快速開始
+
+### 前置需求
+
+- Node.js 18+
+- PostgreSQL 14+
+- Docker & Docker Compose (可選)
+
+### 安裝步驟
+
+1. 複製專案
+
+```bash
+git clone https://github.com/lgscvb/customer-messaging-platform.git
+cd customer-messaging-platform
+```
+
+2. 安裝依賴
+
+```bash
+# 安裝後端依賴
+cd backend
+npm install
+
+# 安裝前端依賴
+cd ../frontend
+npm install
+```
+
+3. 設定環境變數
+
+```bash
+# 後端環境變數
+cd ../backend
+cp .env.example .env
+# 編輯 .env 文件，填入必要的配置
+
+# 前端環境變數
+cd ../frontend
+cp .env.example .env
+# 編輯 .env 文件，填入必要的配置
+```
+
+4. 初始化資料庫
+
+```bash
+cd ../backend
+npm run db:init
+```
+
+5. 啟動開發環境
+
+```bash
+# 啟動後端
+cd ../backend
+npm run dev
+
+# 啟動前端 (新開一個終端)
+cd ../frontend
+npm run dev
+```
+
+6. 使用 Docker Compose 啟動 (可選)
+
+```bash
+# 在專案根目錄
+docker-compose up -d
+```
+
+## 平台整合
+
+### LINE 整合
+
+1. 在 [LINE Developers](https://developers.line.biz/) 創建一個 Provider 和 Channel
+2. 獲取 Channel Access Token 和 Channel Secret
+3. 設定 Webhook URL 為 `https://your-domain.com/api/webhooks/line`
+4. 在 `.env` 文件中設定 LINE 相關配置
+
+### Facebook 整合
+
+1. 在 [Facebook for Developers](https://developers.facebook.com/) 創建一個應用
+2. 設定 Messenger 產品
+3. 獲取 Page Access Token 和 App Secret
+4. 設定 Webhook URL 為 `https://your-domain.com/api/webhooks/facebook`
+5. 在 `.env` 文件中設定 Facebook 相關配置
+
+### 官網整合
+
+1. 在官網中加入我們提供的聊天小工具 JavaScript 代碼
+2. 設定 API Key 和 Webhook Secret
+3. 在 `.env` 文件中設定網站相關配置
 
 ## 專案結構
 
 ```
 customer-messaging-platform/
-├── backend/                # 後端程式碼
+├── backend/                # 後端代碼
 │   ├── src/
-│   │   ├── config/         # 配置文件
+│   │   ├── connectors/     # 平台連接器
 │   │   ├── controllers/    # 控制器
-│   │   ├── middlewares/    # 中間件
 │   │   ├── models/         # 數據模型
 │   │   ├── routes/         # API 路由
 │   │   ├── services/       # 業務邏輯
 │   │   ├── utils/          # 工具函數
 │   │   ├── app.ts          # Express 應用
 │   │   └── index.ts        # 入口文件
-│   ├── scripts/            # 腳本文件
-│   ├── .env                # 環境變量
-│   ├── .env.test           # 測試環境變量
-│   ├── Dockerfile          # Docker 配置
-│   ├── jest.config.js      # Jest 配置
-│   ├── package.json        # 依賴管理
-│   └── tsconfig.json       # TypeScript 配置
-│
-├── frontend/               # 前端程式碼
+│   ├── scripts/            # 腳本
+│   └── tests/              # 測試
+├── frontend/               # 前端代碼
 │   ├── public/             # 靜態資源
-│   ├── src/
-│   │   ├── components/     # 組件
-│   │   ├── contexts/       # 上下文
-│   │   ├── hooks/          # 自定義 Hooks
-│   │   ├── i18n/           # 國際化
-│   │   ├── lib/            # 工具庫
-│   │   ├── pages/          # 頁面
-│   │   ├── services/       # API 服務
-│   │   ├── store/          # Redux 狀態管理
-│   │   ├── styles/         # 樣式
-│   │   └── types/          # TypeScript 類型
-│   ├── .env                # 環境變量
-│   ├── Dockerfile          # Docker 配置
-│   ├── next.config.js      # Next.js 配置
-│   ├── package.json        # 依賴管理
-│   └── tsconfig.json       # TypeScript 配置
-│
-├── .github/                # GitHub 配置
-│   └── workflows/          # GitHub Actions
-│
-├── docker-compose.yml      # Docker Compose 配置
-└── README.md               # 項目說明
+│   └── src/
+│       ├── components/     # React 組件
+│       ├── contexts/       # React 上下文
+│       ├── hooks/          # React 鉤子
+│       ├── pages/          # 頁面組件
+│       ├── services/       # API 服務
+│       ├── store/          # Redux 狀態
+│       ├── utils/          # 工具函數
+│       └── App.tsx         # 根組件
+├── docs/                   # 文檔
+└── docker-compose.yml      # Docker Compose 配置
 ```
 
-## 安裝與運行
+## 開發指南
 
-### 前置需求
+### 代碼風格
 
-- Node.js 18+
-- PostgreSQL 14+
-- Redis
-- Docker (可選)
-
-### 本地開發
-
-1. 克隆儲存庫
+本專案使用 ESLint 和 Prettier 來保持代碼風格一致。
 
 ```bash
-git clone https://github.com/your-org/customer-messaging-platform.git
-cd customer-messaging-platform
+# 檢查代碼風格
+npm run lint
+
+# 自動修復代碼風格問題
+npm run lint:fix
 ```
 
-2. 安裝後端依賴
+### 提交規範
+
+本專案使用 Conventional Commits 規範。
 
 ```bash
-cd backend
-npm install
+# 提交示例
+git commit -m "feat: 添加 LINE 連接器"
+git commit -m "fix: 修復消息發送問題"
 ```
 
-3. 設置環境變量
+### 測試
 
 ```bash
-cp .env.example .env
-# 編輯 .env 文件，填入必要的配置
-```
+# 運行單元測試
+npm run test
 
-4. 啟動後端服務
-
-```bash
-npm run dev
-```
-
-5. 安裝前端依賴
-
-```bash
-cd ../frontend
-npm install
-```
-
-6. 啟動前端服務
-
-```bash
-npm run dev
-```
-
-7. 訪問應用
-
-打開瀏覽器，訪問 http://localhost:3000
-
-### 使用 Docker 運行
-
-1. 使用 Docker Compose 啟動所有服務
-
-```bash
-docker-compose up -d
-```
-
-2. 訪問應用
-
-打開瀏覽器，訪問 http://localhost:80
-
-## 測試
-
-### 運行後端測試
-
-```bash
-cd backend
-npm test
-```
-
-### 運行前端測試
-
-```bash
-cd frontend
-npm test
+# 運行端到端測試
+npm run test:e2e
 ```
 
 ## 部署
 
-### 使用 GitHub Actions 部署
-
-本項目配置了 GitHub Actions 工作流，可以自動化部署到開發環境和生產環境。
-
-- 推送到 `develop` 分支會觸發部署到開發環境
-- 推送到 `main` 分支會觸發部署到生產環境
-
-### 手動部署
-
-1. 構建 Docker 映像
+### 使用 Docker
 
 ```bash
-docker-compose build
+# 構建 Docker 映像
+docker build -t customer-messaging-platform-backend ./backend
+docker build -t customer-messaging-platform-frontend ./frontend
+
+# 運行容器
+docker run -p 3000:3000 customer-messaging-platform-backend
+docker run -p 3001:3001 customer-messaging-platform-frontend
 ```
 
-2. 推送 Docker 映像到儲存庫
+### 使用 Kubernetes
 
-```bash
-docker-compose push
-```
-
-3. 在目標環境中拉取並運行
-
-```bash
-docker-compose pull
-docker-compose up -d
-```
+請參考 `k8s/` 目錄中的 Kubernetes 配置文件。
 
 ## 貢獻指南
 
-1. Fork 儲存庫
-2. 創建功能分支 (`git checkout -b feature/amazing-feature`)
-3. 提交更改 (`git commit -m 'Add some amazing feature'`)
+1. Fork 本專案
+2. 創建您的功能分支 (`git checkout -b feature/amazing-feature`)
+3. 提交您的更改 (`git commit -m 'feat: 添加一些很棒的功能'`)
 4. 推送到分支 (`git push origin feature/amazing-feature`)
-5. 創建 Pull Request
+5. 開啟一個 Pull Request
 
-## 授權
+## 許可證
 
-本項目採用 [MIT 授權](LICENSE)。
+本專案採用 MIT 許可證 - 詳見 [LICENSE](LICENSE) 文件。
 
-## 聯絡方式
+## 聯絡我們
 
-如有任何問題或建議，請聯絡：
-
-- 電子郵件：contact@example.com
-- 問題追蹤：[GitHub Issues](https://github.com/your-org/customer-messaging-platform/issues)
+如有任何問題或建議，請聯絡我們：support@example.com
