@@ -18,6 +18,9 @@ import {
   Menu,
   MenuItem,
   Tooltip,
+  useMediaQuery,
+  useTheme,
+  Badge,
 } from '@mui/material';
 import {
   Menu as MenuIcon,
@@ -68,12 +71,23 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
   const { t } = useTranslation();
   const router = useRouter();
   const { user, logout } = useAuth();
+  const theme = useTheme();
+  
+  // 響應式斷點
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
+  const isTablet = useMediaQuery(theme.breakpoints.between('sm', 'md'));
   
   // 狀態
-  const [open, setOpen] = React.useState(true);
+  const [open, setOpen] = React.useState(!isMobile && !isTablet);
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const [notificationAnchorEl, setNotificationAnchorEl] = React.useState<null | HTMLElement>(null);
   const [languageAnchorEl, setLanguageAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [notificationCount, setNotificationCount] = React.useState(0);
+  
+  // 監聽屏幕大小變化，自動調整抽屜狀態
+  React.useEffect(() => {
+    setOpen(!isMobile && !isTablet);
+  }, [isMobile, isTablet]);
   
   // 導航項目
   const navigationItems: NavigationItem[] = [
@@ -154,6 +168,8 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
    */
   const handleNotificationMenuOpen = (event: React.MouseEvent<HTMLElement>) => {
     setNotificationAnchorEl(event.currentTarget);
+    // 清除通知計數
+    setNotificationCount(0);
   };
   
   /**
@@ -191,6 +207,10 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
    */
   const handleNavigation = (path: string) => {
     router.push(path);
+    // 在移動設備上，點擊導航項目後自動收起抽屜
+    if (isMobile) {
+      setOpen(false);
+    }
   };
   
   /**
@@ -216,7 +236,7 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
             easing: theme.transitions.easing.sharp,
             duration: theme.transitions.duration.leavingScreen,
           }),
-          ...(open && {
+          ...(open && !isMobile && {
             marginLeft: drawerWidth,
             width: `calc(100% - ${drawerWidth}px)`,
             transition: (theme) => theme.transitions.create(['width', 'margin'], {
@@ -226,19 +246,30 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
           }),
         }}
       >
-        <Toolbar>
+        <Toolbar sx={{ 
+          pr: { xs: 1, sm: 2 }, // 在小屏幕上減少右側填充
+          pl: { xs: 1, sm: 2 }, // 在小屏幕上減少左側填充
+        }}>
           <IconButton
             color="inherit"
             aria-label="open drawer"
             onClick={handleDrawerToggle}
             edge="start"
-            sx={{ mr: 2 }}
+            sx={{ mr: { xs: 1, sm: 2 } }} // 在小屏幕上減少右側邊距
           >
             {open ? <ChevronLeftIcon /> : <MenuIcon />}
           </IconButton>
           
-          <Typography variant="h6" noWrap component="div" sx={{ flexGrow: 1 }}>
-            {t('app.title')}
+          <Typography 
+            variant="h6" 
+            noWrap 
+            component="div" 
+            sx={{ 
+              flexGrow: 1,
+              fontSize: { xs: '1rem', sm: '1.25rem' }, // 在小屏幕上減小字體大小
+            }}
+          >
+            {isMobile ? t('app.shortTitle') : t('app.title')}
           </Typography>
           
           {/* 語言切換 */}
@@ -246,7 +277,7 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
             <IconButton
               color="inherit"
               onClick={handleLanguageMenuOpen}
-              sx={{ ml: 1 }}
+              sx={{ ml: { xs: 0.5, sm: 1 } }} // 在小屏幕上減少左側邊距
             >
               <LanguageIcon />
             </IconButton>
@@ -266,9 +297,11 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
             <IconButton
               color="inherit"
               onClick={handleNotificationMenuOpen}
-              sx={{ ml: 1 }}
+              sx={{ ml: { xs: 0.5, sm: 1 } }} // 在小屏幕上減少左側邊距
             >
-              <NotificationsIcon />
+              <Badge badgeContent={notificationCount} color="error">
+                <NotificationsIcon />
+              </Badge>
             </IconButton>
           </Tooltip>
           
@@ -288,13 +321,13 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
             <IconButton
               color="inherit"
               onClick={handleUserMenuOpen}
-              sx={{ ml: 1 }}
+              sx={{ ml: { xs: 0.5, sm: 1 } }} // 在小屏幕上減少左側邊距
             >
               {user?.avatar ? (
                 <Avatar
                   alt={user.name || `${user.firstName} ${user.lastName}`}
                   src={user.avatar}
-                  sx={{ width: 32, height: 32 }}
+                  sx={{ width: { xs: 28, sm: 32 }, height: { xs: 28, sm: 32 } }} // 在小屏幕上減小頭像大小
                 />
               ) : (
                 <AccountCircleIcon />
@@ -333,14 +366,15 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
       
       {/* 側邊抽屜 */}
       <Drawer
-        variant="permanent"
+        variant={isMobile ? "temporary" : "permanent"} // 在移動設備上使用臨時抽屜
         open={open}
+        onClose={isMobile ? handleDrawerToggle : undefined} // 在移動設備上點擊外部可關閉抽屜
         sx={{
           width: drawerWidth,
           flexShrink: 0,
           whiteSpace: 'nowrap',
           boxSizing: 'border-box',
-          ...(open && {
+          ...(open && !isMobile && {
             '& .MuiDrawer-paper': {
               width: drawerWidth,
               transition: (theme) => theme.transitions.create('width', {
@@ -350,7 +384,7 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
               overflowX: 'hidden',
             },
           }),
-          ...(!open && {
+          ...(!open && !isMobile && {
             '& .MuiDrawer-paper': {
               transition: (theme) => theme.transitions.create('width', {
                 easing: theme.transitions.easing.sharp,
@@ -358,6 +392,11 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
               }),
               overflowX: 'hidden',
               width: (theme) => theme.spacing(7),
+            },
+          }),
+          ...(isMobile && {
+            '& .MuiDrawer-paper': {
+              width: drawerWidth,
             },
           }),
         }}
@@ -417,8 +456,12 @@ const Navigation: React.FC<NavigationProps> = ({ children }) => {
           sx={{
             flexGrow: 1,
             p: 0,
-            width: { sm: `calc(100% - ${drawerWidth}px)` },
-            mt: '64px',
+            width: { xs: '100%', sm: open ? `calc(100% - ${drawerWidth}px)` : `calc(100% - ${theme.spacing(7)})` },
+            mt: { xs: '56px', sm: '64px' }, // 在小屏幕上調整頂部邊距
+            transition: theme.transitions.create(['width', 'margin'], {
+              easing: theme.transitions.easing.sharp,
+              duration: theme.transitions.duration.leavingScreen,
+            }),
           }}
         >
           {children}
