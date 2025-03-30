@@ -20,9 +20,9 @@ import {
 } from '@mui/material';
 import { 
   Message as MessageIcon, 
-  Reply as ReplyIcon, 
-  Timer as TimerIcon,
   Person as PersonIcon,
+  Reply as ReplyIcon,
+  Timer as TimerIcon,
   TrendingUp as TrendingUpIcon,
   TrendingDown as TrendingDownIcon
 } from '@mui/icons-material';
@@ -103,7 +103,7 @@ const CustomerInteractionSection: React.FC<CustomerInteractionSectionProps> = ({
     
     return [{
       name: t('dashboard.messages'),
-      data: data.messagesTrend.labels.map((label, index) => ({
+      data: data.messagesTrend.labels.map((label: string, index: number) => ({
         label,
         value: data.messagesTrend.datasets[0].data[index]
       })),
@@ -120,7 +120,7 @@ const CustomerInteractionSection: React.FC<CustomerInteractionSectionProps> = ({
     
     return [{
       name: t('dashboard.replies'),
-      data: data.repliesTrend.labels.map((label, index) => ({
+      data: data.repliesTrend.labels.map((label: string, index: number) => ({
         label,
         value: data.repliesTrend.datasets[0].data[index]
       })),
@@ -137,7 +137,7 @@ const CustomerInteractionSection: React.FC<CustomerInteractionSectionProps> = ({
     
     return [{
       name: t('dashboard.responseTime'),
-      data: data.responseTimeTrend.labels.map((label, index) => ({
+      data: data.responseTimeTrend.labels.map((label: string, index: number) => ({
         label,
         value: data.responseTimeTrend.datasets[0].data[index]
       })),
@@ -179,7 +179,7 @@ const CustomerInteractionSection: React.FC<CustomerInteractionSectionProps> = ({
   const calculateTotalMessages = (): number => {
     if (!data) return 0;
     
-    return data.messagesTrend.datasets[0].data.reduce((sum, value) => sum + value, 0);
+    return data.messagesTrend.datasets[0].data.reduce((sum: number, value: number) => sum + value, 0);
   };
   
   /**
@@ -188,7 +188,7 @@ const CustomerInteractionSection: React.FC<CustomerInteractionSectionProps> = ({
   const calculateTotalReplies = (): number => {
     if (!data) return 0;
     
-    return data.repliesTrend.datasets[0].data.reduce((sum, value) => sum + value, 0);
+    return data.repliesTrend.datasets[0].data.reduce((sum: number, value: number) => sum + value, 0);
   };
   
   /**
@@ -198,7 +198,7 @@ const CustomerInteractionSection: React.FC<CustomerInteractionSectionProps> = ({
     if (!data) return 0;
     
     const values = data.responseTimeTrend.datasets[0].data;
-    return values.reduce((sum, value) => sum + value, 0) / values.length;
+    return values.reduce((sum: number, value: number) => sum + value, 0) / values.length;
   };
   
   /**
@@ -228,7 +228,7 @@ const CustomerInteractionSection: React.FC<CustomerInteractionSectionProps> = ({
     
     return (
       <List disablePadding>
-        {data.topCustomers.map((customer, index) => (
+        {data.topCustomers.map((customer: any, index: number) => (
           <ListItem 
             key={customer.id}
             divider={index < data.topCustomers.length - 1}

@@ -103,7 +103,7 @@ const ReplyEffectivenessSection: React.FC<ReplyEffectivenessSectionProps> = ({
     
     return [{
       name: t('dashboard.aiRepliesPercentage'),
-      data: data.aiRepliesTrend.labels.map((label, index) => ({
+      data: data.aiRepliesTrend.labels.map((label: string, index: number) => ({
         label,
         value: data.aiRepliesTrend.datasets[0].data[index]
       })),
@@ -118,7 +118,7 @@ const ReplyEffectivenessSection: React.FC<ReplyEffectivenessSectionProps> = ({
   const prepareAiConfidenceData = () => {
     if (!data) return [];
     
-    return data.aiConfidenceDistribution.map(item => ({
+    return data.aiConfidenceDistribution.map((item: any) => ({
       name: item.label,
       value: item.value,
       color: item.color
@@ -173,7 +173,7 @@ const ReplyEffectivenessSection: React.FC<ReplyEffectivenessSectionProps> = ({
     
     return (
       <List disablePadding>
-        {data.topCategories.map((category, index) => (
+        {data.topCategories.map((category: any, index: number) => (
           <ListItem 
             key={category.category}
             divider={index < data.topCategories.length - 1}
@@ -237,7 +237,7 @@ const ReplyEffectivenessSection: React.FC<ReplyEffectivenessSectionProps> = ({
         
         <Grid item xs={12} md={6}>
           <List disablePadding>
-            {data.aiConfidenceDistribution.map((item) => (
+            {data.aiConfidenceDistribution.map((item: any) => (
               <ListItem 
                 key={item.label}
                 sx={{ px: 0 }}
