@@ -25,7 +25,7 @@ import {
   Analytics as AnalyticsIcon,
   CloudUpload as CloudUploadIcon,
 } from '@mui/icons-material';
-import { useNotifications } from '../../contexts/NotificationContext';
+import { useNotifications, NotificationProvider } from '../../contexts/NotificationContext';
 import { NotificationType } from '../../contexts/NotificationContext';
 import knowledgeService from '../../services/knowledgeService';
 import KnowledgeExtraction from '../../components/knowledge/KnowledgeExtraction';
@@ -74,7 +74,7 @@ const a11yProps = (index: number) => {
  * 知識管理頁面
  * 整合知識提取、知識組織和知識圖譜功能
  */
-const KnowledgeManagementPage: React.FC = () => {
+const KnowledgeManagementPageContent: React.FC = () => {
   const { t } = useTranslation();
   const { addNotification } = useNotifications();
   
@@ -363,6 +363,18 @@ const KnowledgeManagementPage: React.FC = () => {
         </TabPanel>
       </Paper>
     </Container>
+  );
+};
+
+/**
+ * 知識管理頁面包裝組件
+ * 提供 NotificationProvider 上下文
+ */
+const KnowledgeManagementPage: React.FC = () => {
+  return (
+    <NotificationProvider>
+      <KnowledgeManagementPageContent />
+    </NotificationProvider>
   );
 };
 
