@@ -3,6 +3,7 @@ import { Inter } from 'next/font/google';
 import './globals.css';
 import { NotificationProvider } from '../contexts/NotificationContext';
 import { AuthProvider } from '../contexts/AuthContext';
+import '../i18n'; // 導入 i18n 配置
 
 const inter = Inter({ subsets: ['latin'] });
 
