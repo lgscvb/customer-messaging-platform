@@ -33,6 +33,7 @@ import KnowledgeOrganization from '../../components/knowledge/KnowledgeOrganizat
 import KnowledgeGraph from '../../components/knowledge/KnowledgeGraph';
 import KnowledgeAnalytics from '../../components/knowledge/KnowledgeAnalytics';
 import KnowledgeFileUploader from '../../components/knowledge/KnowledgeFileUploader';
+import '../../i18n'; // 導入 i18n 配置
 
 // 定義標籤面板接口
 interface TabPanelProps {
