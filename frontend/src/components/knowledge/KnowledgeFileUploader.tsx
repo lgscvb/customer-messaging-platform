@@ -20,14 +20,10 @@ import Alert from '@mui/material/Alert';
 import AlertTitle from '@mui/material/AlertTitle';
 import TextField from '@mui/material/TextField';
 import Tooltip from '@mui/material/Tooltip';
-import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
-import ExpandLessIcon from '@mui/icons-material/ExpandLess';
-import CheckIcon from '@mui/icons-material/Check';
-import CloseIcon from '@mui/icons-material/Close';
-import CloudUploadIcon from '@mui/icons-material/CloudUpload';
-import DeleteIcon from '@mui/icons-material/Delete';
+import { Close, CloudUpload, Delete, Visibility } from '@mui/icons-material';
 import { useNotifications, NotificationType } from '../../contexts/NotificationContext';
 import api from '../../services/api';
+import FilePreview from './FilePreview';
 
 // 檔案狀態
 enum FileStatus {
@@ -89,6 +85,8 @@ const KnowledgeFileUploader: React.FC<KnowledgeFileUploaderProps> = ({
   const [isUploading, setIsUploading] = React.useState(false);
   const [expandedItems, setExpandedItems] = React.useState<Record<number, boolean>>({});
   const [error, setError] = React.useState<string | null>(null);
+  const [previewFile, setPreviewFile] = React.useState<File | null>(null);
+  const [isPreviewOpen, setIsPreviewOpen] = React.useState(false);
   
   /**
    * 處理檔案拖放
@@ -348,14 +346,29 @@ const KnowledgeFileUploader: React.FC<KnowledgeFileUploaderProps> = ({
   const getStatusIcon = (status: FileStatus) => {
     switch (status) {
       case FileStatus.SUCCESS:
-        return <CheckIcon color="success" />;
+        return <span style={{ color: 'green' }}>✓</span>;
       case FileStatus.ERROR:
-        return <CloseIcon color="error" />;
+        return <span style={{ color: 'red' }}>✗</span>;
       case FileStatus.UPLOADING:
         return <CircularProgress size={20} />;
       default:
         return null;
     }
+  };
+  
+  /**
+   * 處理檔案預覽
+   */
+  const handlePreview = (file: File) => {
+    setPreviewFile(file);
+    setIsPreviewOpen(true);
+  };
+  
+  /**
+   * 關閉檔案預覽
+   */
+  const handleClosePreview = () => {
+    setIsPreviewOpen(false);
   };
   
   /**
@@ -381,12 +394,25 @@ const KnowledgeFileUploader: React.FC<KnowledgeFileUploaderProps> = ({
                     size="small"
                     onClick={(e) => {
                       e.stopPropagation();
+                      handlePreview(fileInfo.file);
+                    }}
+                    sx={{ ml: 1 }}
+                    title={t('knowledge.fileUploader.preview', '預覽')}
+                  >
+                    <Visibility fontSize="small" />
+                  </IconButton>
+                  <IconButton
+                    edge="end"
+                    size="small"
+                    onClick={(e) => {
+                      e.stopPropagation();
                       removeFile(index);
                     }}
                     disabled={fileInfo.status === FileStatus.UPLOADING}
                     sx={{ ml: 1 }}
+                    title={t('common.delete', '刪除')}
                   >
-                    <DeleteIcon fontSize="small" />
+                    <Delete fontSize="small" />
                   </IconButton>
                 </Box>
               }
@@ -436,7 +462,7 @@ const KnowledgeFileUploader: React.FC<KnowledgeFileUploaderProps> = ({
       <CardHeader
         title={
           <Box sx={{ display: 'flex', alignItems: 'center' }}>
-            <CloudUploadIcon sx={{ mr: 1 }} />
+            <CloudUpload sx={{ mr: 1 }} />
             <Typography variant="h6">
               {t('knowledge.fileUploader.title', '檔案上傳')}
             </Typography>
@@ -480,7 +506,7 @@ const KnowledgeFileUploader: React.FC<KnowledgeFileUploaderProps> = ({
             accept={acceptedFileTypes}
             onChange={handleFileSelect}
           />
-          <CloudUploadIcon sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
+          <CloudUpload sx={{ fontSize: 48, color: 'primary.main', mb: 1 }} />
           <Typography variant="h6" gutterBottom>
             {t('knowledge.fileUploader.dragAndDrop', '拖曳檔案到此處')}
           </Typography>
@@ -525,6 +551,13 @@ const KnowledgeFileUploader: React.FC<KnowledgeFileUploaderProps> = ({
             </Button>
           </Box>
         )}
+        
+        {/* 檔案預覽對話框 */}
+        <FilePreview
+          file={previewFile}
+          open={isPreviewOpen}
+          onClose={handleClosePreview}
+        />
       </CardContent>
     </Card>
   );

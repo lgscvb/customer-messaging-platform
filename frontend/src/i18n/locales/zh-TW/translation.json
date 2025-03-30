@@ -16,7 +16,8 @@
     "processing": "處理中...",
     "expand": "展開",
     "collapse": "收合",
-    "dashboard": "儀表板"
+    "dashboard": "儀表板",
+    "close": "關閉"
   },
   "auth": {
     "login": "登入",
@@ -128,7 +129,24 @@
       "uploadSuccess": "成功上傳 {{count}} 個檔案",
       "batchUploadFailed": "批次上傳失敗",
       "uploadCompleteTitle": "檔案上傳完成",
-      "uploadCompleteMessage": "成功上傳 {{count}} 個檔案到知識庫"
+      "uploadCompleteMessage": "成功上傳 {{count}} 個檔案到知識庫",
+      "preview": "預覽"
+    },
+    "filePreview": {
+      "title": "檔案預覽",
+      "preview": "預覽",
+      "info": "信息",
+      "fileInfo": "檔案信息",
+      "fileName": "檔案名稱",
+      "fileType": "檔案類型",
+      "fileSize": "檔案大小",
+      "lastModified": "最後修改時間",
+      "unknown": "未知",
+      "readError": "讀取檔案時發生錯誤",
+      "previewNotAvailable": "無法預覽此類型的檔案",
+      "download": "下載檔案",
+      "audioNotSupported": "您的瀏覽器不支持音頻預覽",
+      "videoNotSupported": "您的瀏覽器不支持視頻預覽"
     }
   }
 }
