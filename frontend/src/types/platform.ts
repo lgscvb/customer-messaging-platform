@@ -20,6 +20,16 @@ export enum PlatformStatus {
 }
 
 /**
+ * 同步狀態枚舉
+ */
+export enum SyncStatus {
+  SUCCESS = 'success',
+  FAILED = 'failed',
+  PARTIAL = 'partial',
+  PENDING = 'pending'
+}
+
+/**
  * 平台設定接口
  */
 export interface PlatformConfig {
@@ -140,4 +150,40 @@ export interface PlatformConfigFormData {
   name: string;
   credentials: Record<string, string>;
   settings: Record<string, any>;
+}
+
+/**
+ * 同步歷史記錄接口
+ */
+export interface SyncHistory {
+  id: string;
+  platformId: string;
+  status: SyncStatus;
+  startTime: string;
+  endTime: string;
+  messageCount: number;
+  customerCount: number;
+  errorMessage?: string;
+  details?: SyncDetails;
+}
+
+/**
+ * 同步詳細信息接口
+ */
+export interface SyncDetails {
+  newMessages: number;
+  updatedMessages: number;
+  newCustomers: number;
+  updatedCustomers: number;
+  errors: SyncError[];
+}
+
+/**
+ * 同步錯誤接口
+ */
+export interface SyncError {
+  code: string;
+  message: string;
+  timestamp: string;
+  data?: any;
 }

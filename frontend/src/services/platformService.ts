@@ -9,7 +9,10 @@ import {
   WebsitePlatformConfig,
   PlatformConnectionStatus,
   PlatformStats,
-  PlatformConfigFormData
+  PlatformConfigFormData,
+  SyncHistory,
+  SyncStatus,
+  SyncDetails
 } from '../types/platform';
 
 /**
@@ -82,8 +85,32 @@ const platformService = {
   /**
    * 同步平台數據
    */
-  syncPlatform: async (id: string): Promise<{ success: boolean; message: string }> => {
+  syncPlatform: async (id: string): Promise<{ success: boolean; message: string; syncId?: string }> => {
     const response = await api.post(`/platforms/${id}/sync`);
+    return response.data;
+  },
+
+  /**
+   * 獲取平台同步歷史記錄
+   */
+  getSyncHistory: async (platformId: string, limit: number = 10): Promise<SyncHistory[]> => {
+    const response = await api.get(`/platforms/${platformId}/sync-history?limit=${limit}`);
+    return response.data;
+  },
+
+  /**
+   * 獲取同步詳細信息
+   */
+  getSyncDetails: async (syncId: string): Promise<SyncDetails> => {
+    const response = await api.get(`/sync/${syncId}/details`);
+    return response.data;
+  },
+
+  /**
+   * 取消同步
+   */
+  cancelSync: async (syncId: string): Promise<{ success: boolean; message: string }> => {
+    const response = await api.post(`/sync/${syncId}/cancel`);
     return response.data;
   },
   
@@ -371,6 +398,134 @@ const platformService = {
       averageResponseTime: 0,
       aiReplyPercentage: 0
     };
+  },
+
+  /**
+   * 獲取模擬同步歷史記錄（用於開發）
+   */
+  getMockSyncHistory: (platformId: string): SyncHistory[] => {
+    const now = new Date();
+    const histories: Record<string, SyncHistory[]> = {
+      '1': [
+        {
+          id: '1-1',
+          platformId: '1',
+          status: SyncStatus.SUCCESS,
+          startTime: new Date(now.getTime() - 3600000).toISOString(), // 1小時前
+          endTime: new Date(now.getTime() - 3550000).toISOString(),   // 1小時前 + 10分鐘
+          messageCount: 120,
+          customerCount: 45,
+          details: {
+            newMessages: 85,
+            updatedMessages: 35,
+            newCustomers: 12,
+            updatedCustomers: 33,
+            errors: []
+          }
+        },
+        {
+          id: '1-2',
+          platformId: '1',
+          status: SyncStatus.SUCCESS,
+          startTime: new Date(now.getTime() - 86400000).toISOString(), // 1天前
+          endTime: new Date(now.getTime() - 86350000).toISOString(),   // 1天前 + 10分鐘
+          messageCount: 230,
+          customerCount: 78,
+          details: {
+            newMessages: 180,
+            updatedMessages: 50,
+            newCustomers: 25,
+            updatedCustomers: 53,
+            errors: []
+          }
+        },
+        {
+          id: '1-3',
+          platformId: '1',
+          status: SyncStatus.PARTIAL,
+          startTime: new Date(now.getTime() - 172800000).toISOString(), // 2天前
+          endTime: new Date(now.getTime() - 172700000).toISOString(),   // 2天前 + 10分鐘
+          messageCount: 95,
+          customerCount: 32,
+          errorMessage: '部分訊息同步失敗',
+          details: {
+            newMessages: 80,
+            updatedMessages: 15,
+            newCustomers: 10,
+            updatedCustomers: 22,
+            errors: [
+              {
+                code: 'API_RATE_LIMIT',
+                message: 'LINE API 請求頻率超過限制',
+                timestamp: new Date(now.getTime() - 172750000).toISOString()
+              }
+            ]
+          }
+        }
+      ],
+      '2': [
+        {
+          id: '2-1',
+          platformId: '2',
+          status: SyncStatus.SUCCESS,
+          startTime: new Date(now.getTime() - 7200000).toISOString(), // 2小時前
+          endTime: new Date(now.getTime() - 7150000).toISOString(),   // 2小時前 + 10分鐘
+          messageCount: 185,
+          customerCount: 62,
+          details: {
+            newMessages: 145,
+            updatedMessages: 40,
+            newCustomers: 18,
+            updatedCustomers: 44,
+            errors: []
+          }
+        },
+        {
+          id: '2-2',
+          platformId: '2',
+          status: SyncStatus.FAILED,
+          startTime: new Date(now.getTime() - 93600000).toISOString(), // 1天 + 2小時前
+          endTime: new Date(now.getTime() - 93590000).toISOString(),   // 1天 + 2小時前 + 10秒
+          messageCount: 0,
+          customerCount: 0,
+          errorMessage: 'Facebook API 授權失敗',
+          details: {
+            newMessages: 0,
+            updatedMessages: 0,
+            newCustomers: 0,
+            updatedCustomers: 0,
+            errors: [
+              {
+                code: 'AUTH_ERROR',
+                message: 'Facebook API 授權失敗，請重新授權',
+                timestamp: new Date(now.getTime() - 93595000).toISOString()
+              }
+            ]
+          }
+        }
+      ],
+      '3': [
+        {
+          id: '3-1',
+          platformId: '3',
+          status: SyncStatus.SUCCESS,
+          startTime: new Date(now.getTime() - 1800000).toISOString(), // 30分鐘前
+          endTime: new Date(now.getTime() - 1790000).toISOString(),   // 30分鐘前 + 10秒
+          messageCount: 45,
+          customerCount: 22,
+          details: {
+            newMessages: 35,
+            updatedMessages: 10,
+            newCustomers: 8,
+            updatedCustomers: 14,
+            errors: []
+          }
+        }
+      ],
+      '4': []
+    };
+    
+    return histories[platformId] || [];
   }
 };
 
