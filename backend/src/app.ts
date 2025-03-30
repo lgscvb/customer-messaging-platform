@@ -21,6 +21,7 @@ import aiRoutes from './routes/ai';
 import knowledgeExtractionRoutes from './routes/knowledge-extraction';
 import knowledgeOrganizationRoutes from './routes/knowledge-organization';
 import apiConfigRoutes from './routes/api-configs';
+import supervisedLearningRoutes from './routes/supervised-learning';
 
 // 創建 Express 應用
 const app = express();
@@ -61,6 +62,7 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/knowledge-extraction', knowledgeExtractionRoutes);
 app.use('/api/knowledge-organization', knowledgeOrganizationRoutes);
 app.use('/api/api-configs', apiConfigRoutes);
+app.use('/api/supervised-learning', supervisedLearningRoutes);
 
 // 健康檢查端點
 app.get('/health', (req: Request, res: Response) => {
