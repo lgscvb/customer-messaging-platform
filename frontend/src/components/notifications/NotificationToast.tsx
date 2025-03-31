@@ -1,12 +1,12 @@
 import React from 'react';
-import { 
-  Alert, 
-  AlertTitle, 
-  Snackbar, 
-  IconButton, 
-  Box, 
-  Typography 
+import {
+  Alert,
+  Snackbar,
+  IconButton,
+  Box,
+  Typography
 } from '@mui/material';
+import AlertTitle from '@mui/material/AlertTitle';
 import { Close as CloseIcon } from '@mui/icons-material';
 import { Notification, NotificationType } from '../../contexts/NotificationContext';
 
