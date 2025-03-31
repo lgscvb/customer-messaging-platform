@@ -414,6 +414,22 @@
 我們還成功實現了監督式學習機制，允許系統從人工修改的 AI 回覆中學習並改進。這個機制包括從人工修改中學習、知識項目生成、改進建議生成和學習統計與分析等功能。這將大大提高 AI 回覆的質量，並使系統能夠不斷學習和改進。
 
 我們最近修復了 i18n 國際化問題，確保所有頁面正確顯示繁體中文，提升了用戶體驗。我們還優化了響應式設計，確保在不同設備上的良好體驗，並實現了深色模式支援，讓用戶可以根據自己的偏好選擇亮色或暗色主題。我們也改進了表單驗證和錯誤提示，提供了更好的用戶反饋和指導。
+### 最新更新 (2025/3/31 下午11:28)
+
+我們今天完成了以下工作：
+
+26. **將 PROGRESS.md 重命名為 progress.md**：
+   - 使用 git mv 命令重命名文件，保留完整的 git 歷史記錄
+   - 解決了每次提交更新時需要記住使用大寫文件名的問題
+   - 簡化了後續的工作流程，使文件名更符合常見的小寫命名慣例
+   - 確保所有相關的腳本和命令能夠正確引用該文件
+
+25. **修復 ai.test.ts 中的 TypeScript 錯誤**：
+   - 修復了重複聲明 KnowledgeItemExtension 變量的問題
+   - 使用 KnowledgeItemExtensionModule.KnowledgeItemExtension 替代直接使用 KnowledgeItemExtension
+   - 移除了多餘的重複代碼
+   - 確保所有測試能夠正確運行，沒有 TypeScript 錯誤
+
 ### 最新更新 (2025/3/31 下午11:14)
 
 我們今天完成了以下工作：
@@ -423,6 +439,16 @@
    - 添加了正確引用 KnowledgeItemExtension 的代碼
    - 確保測試能夠正確驗證 KnowledgeItemExtension.search 方法的調用
    - 保持了測試代碼的一致性，確保所有測試使用相同的模擬方式
+
+### 最新更新 (2025/3/31 下午11:25)
+
+我們今天完成了以下工作：
+
+25. **修復 ai.test.ts 中的 TypeScript 錯誤**：
+   - 修復了重複聲明 KnowledgeItemExtension 變量的問題
+   - 使用 KnowledgeItemExtensionModule.KnowledgeItemExtension 替代直接使用 KnowledgeItemExtension
+   - 移除了多餘的重複代碼
+   - 確保所有測試能夠正確運行，沒有 TypeScript 錯誤
 
 ### 最新更新 (2025/3/31 下午11:14)
 
