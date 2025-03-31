@@ -64,9 +64,10 @@ describe('AIService', () => {
           updatedAt: new Date(),
         },
       ];
-
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      (KnowledgeItemExtension.search as jest.Mock).mockResolvedValue(mockKnowledgeItems);
+// 獲取 KnowledgeItemExtension 並設置模擬返回值
+const KnowledgeItemExtensionModule = require('../../models/KnowledgeItem');
+(KnowledgeItemExtensionModule.KnowledgeItemExtension.search as jest.Mock).mockResolvedValue(mockKnowledgeItems);
+      // 這行是多餘的，已經在上面設置了模擬返回值
 
       // 模擬 LLM 鏈結果
       const mockLLMResult = {
@@ -88,8 +89,7 @@ describe('AIService', () => {
       expect(result.knowledgeSources[1]).toHaveProperty('id', 'knowledge-2');
 
       // 驗證 KnowledgeItemExtension.search 被調用
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      expect(KnowledgeItemExtension.search).toHaveBeenCalledWith('我想了解智能家居系統的價格');
+      expect(KnowledgeItemExtensionModule.KnowledgeItemExtension.search).toHaveBeenCalledWith('我想了解智能家居系統的價格');
 
       // 驗證 LLMChain.call 被調用
       expect(LLMChain.prototype.call).toHaveBeenCalled();
@@ -104,8 +104,8 @@ describe('AIService', () => {
       };
 
       // 模擬空的知識庫搜索結果
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      (KnowledgeItemExtension.search as jest.Mock).mockResolvedValue([]);
+      const KnowledgeItemExtensionModule = require('../../models/KnowledgeItem');
+      (KnowledgeItemExtensionModule.KnowledgeItemExtension.search as jest.Mock).mockResolvedValue([]);
 
       // 模擬 LLM 鏈結果
       const mockLLMResult = {
@@ -125,9 +125,8 @@ describe('AIService', () => {
       expect(result.knowledgeSources).toHaveLength(0);
       expect(result.confidenceScore).toBeLessThan(0.5); // 信心分數應該較低
 
-      // 驗證 KnowledgeItemModel.search 被調用
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      expect(KnowledgeItemExtension.search).toHaveBeenCalledWith('我想了解太空旅行的價格');
+      // 驗證 KnowledgeItemExtension.search 被調用
+      expect(KnowledgeItemExtensionModule.KnowledgeItemExtension.search).toHaveBeenCalledWith('我想了解太空旅行的價格');
 
       // 驗證 LLMChain.call 被調用
       expect(LLMChain.prototype.call).toHaveBeenCalled();
@@ -143,15 +142,14 @@ describe('AIService', () => {
 
       // 模擬知識庫搜索錯誤
       const mockError = new Error('資料庫連接錯誤');
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      (KnowledgeItemExtension.search as jest.Mock).mockRejectedValue(mockError);
+      const KnowledgeItemExtensionModule = require('../../models/KnowledgeItem');
+      (KnowledgeItemExtensionModule.KnowledgeItemExtension.search as jest.Mock).mockRejectedValue(mockError);
 
       // 執行測試並驗證錯誤被拋出
       await expect(AIService.generateResponse(request)).rejects.toThrow('資料庫連接錯誤');
 
-      // 驗證 KnowledgeItemModel.search 被調用
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      expect(KnowledgeItemExtension.search).toHaveBeenCalledWith('我想了解智能家居系統的價格');
+      // 驗證 KnowledgeItemExtension.search 被調用
+      expect(KnowledgeItemExtensionModule.KnowledgeItemExtension.search).toHaveBeenCalledWith('我想了解智能家居系統的價格');
     });
   });
 
@@ -169,9 +167,9 @@ describe('AIService', () => {
           updatedAt: new Date(),
         },
       ];
-
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      (KnowledgeItemExtension.search as jest.Mock).mockResolvedValue(mockKnowledgeItems);
+const KnowledgeItemExtensionModule = require('../../models/KnowledgeItem');
+(KnowledgeItemExtensionModule.KnowledgeItemExtension.search as jest.Mock).mockResolvedValue(mockKnowledgeItems);
+      // 這行是多餘的，已經在上面設置了模擬返回值
 
       // 使用 TypeScript 的類型斷言來訪問私有方法
       const result = await (AIService as any).retrieveRelevantKnowledge('智能家居價格');
@@ -183,15 +181,14 @@ describe('AIService', () => {
       expect(result.documents[0].pageContent).toContain('智能家居系統基礎版介紹');
       expect(result.documents[0].metadata).toHaveProperty('id', 'knowledge-1');
 
-      // 驗證 KnowledgeItemModel.search 被調用
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      expect(KnowledgeItemExtension.search).toHaveBeenCalledWith('智能家居價格');
+      // 驗證 KnowledgeItemExtension.search 被調用
+      expect(KnowledgeItemExtensionModule.KnowledgeItemExtension.search).toHaveBeenCalledWith('智能家居價格');
     });
 
     it('應該處理空結果', async () => {
       // 模擬空的知識庫搜索結果
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      (KnowledgeItemExtension.search as jest.Mock).mockResolvedValue([]);
+      const KnowledgeItemExtensionModule = require('../../models/KnowledgeItem');
+      (KnowledgeItemExtensionModule.KnowledgeItemExtension.search as jest.Mock).mockResolvedValue([]);
 
       // 使用 TypeScript 的類型斷言來訪問私有方法
       const result = await (AIService as any).retrieveRelevantKnowledge('不存在的主題');
@@ -200,9 +197,8 @@ describe('AIService', () => {
       expect(result).toHaveProperty('documents');
       expect(result.documents).toHaveLength(0);
 
-      // 驗證 KnowledgeItemModel.search 被調用
-      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
-      expect(KnowledgeItemExtension.search).toHaveBeenCalledWith('不存在的主題');
+      // 驗證 KnowledgeItemExtension.search 被調用
+      expect(KnowledgeItemExtensionModule.KnowledgeItemExtension.search).toHaveBeenCalledWith('不存在的主題');
     });
   });
 
