@@ -414,9 +414,14 @@
 我們還成功實現了監督式學習機制，允許系統從人工修改的 AI 回覆中學習並改進。這個機制包括從人工修改中學習、知識項目生成、改進建議生成和學習統計與分析等功能。這將大大提高 AI 回覆的質量，並使系統能夠不斷學習和改進。
 
 我們最近修復了 i18n 國際化問題，確保所有頁面正確顯示繁體中文，提升了用戶體驗。我們還優化了響應式設計，確保在不同設備上的良好體驗，並實現了深色模式支援，讓用戶可以根據自己的偏好選擇亮色或暗色主題。我們也改進了表單驗證和錯誤提示，提供了更好的用戶反饋和指導。
-### 最新更新 (2025/4/1 上午12:29)
+### 最新更新 (2025/4/1 上午12:40)
 
 我們今天完成了以下工作：
+
+39. **修復 FileUploader.tsx 中的 React hooks 使用方式和移除未使用的導入**：
+   - 修正 React hooks 的使用方式，改為通過 React 命名空間訪問，如 React.useState, React.useCallback 等
+   - 移除了未使用的導入（Chip, Grid, Alert）以解決 eslint 錯誤
+   - 與 NotificationContainer.tsx 修復方式保持一致，確保整個專案中 React hooks 的使用方式統一
 
 38. **修復 website.ts 中缺少 platformCustomerId 欄位的問題**：
    - 在 CustomerPlatform.create() 方法中添加了必要的 platformCustomerId 欄位
