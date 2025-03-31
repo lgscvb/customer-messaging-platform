@@ -1,18 +1,18 @@
-import React, { useState, useEffect } from 'react';
-import { 
-  Badge, 
-  IconButton, 
-  Popover, 
-  List, 
-  ListItem, 
-  ListItemText, 
-  ListItemSecondaryAction,
-  Typography, 
-  Divider, 
-  Box, 
+import React from 'react';
+import {
+  Badge,
+  IconButton,
+  Popover,
+  List,
+  ListItem,
+  ListItemText,
+  Typography,
+  Divider,
+  Box,
   Button,
   Tooltip
 } from '@mui/material';
+import ListItemSecondaryAction from '@mui/material/ListItemSecondaryAction';
 import { 
   Notifications as NotificationsIcon,
   Delete as DeleteIcon,
@@ -35,12 +35,12 @@ const NotificationContainer: React.FC = () => {
     markAsRead, 
     markAllAsRead, 
     removeNotification, 
-    clearAllNotifications 
+    clearAll
   } = useNotifications();
   
-  const [anchorEl, setAnchorEl] = useState<HTMLButtonElement | null>(null);
-  const [latestNotification, setLatestNotification] = useState<Notification | null>(null);
-  const [toastOpen, setToastOpen] = useState(false);
+  const [anchorEl, setAnchorEl] = React.useState<HTMLButtonElement | null>(null);
+  const [latestNotification, setLatestNotification] = React.useState<Notification | null>(null);
+  const [toastOpen, setToastOpen] = React.useState(false);
   
   // 處理通知圖標點擊
   const handleClick = (event: React.MouseEvent<HTMLButtonElement>) => {
@@ -58,9 +58,7 @@ const NotificationContainer: React.FC = () => {
   // 處理通知點擊
   const handleNotificationClick = (notification: Notification) => {
     markAsRead(notification.id);
-    if (notification.link) {
-      window.location.href = notification.link;
-    }
+    // 移除對 notification.link 的引用，因為 Notification 接口中沒有定義此屬性
   };
   
   // 處理通知刪除
@@ -71,7 +69,7 @@ const NotificationContainer: React.FC = () => {
   
   // 處理清除所有通知
   const handleClearAll = () => {
-    clearAllNotifications();
+    clearAll();
     handleClose();
   };
   
@@ -84,7 +82,7 @@ const NotificationContainer: React.FC = () => {
   };
   
   // 監聽新通知
-  useEffect(() => {
+  React.useEffect(() => {
     if (notifications.length > 0) {
       const latest = notifications[0];
       if (!latest.read) {
@@ -211,7 +209,7 @@ const NotificationContainer: React.FC = () => {
                           color="text.secondary"
                           sx={{ display: 'block', mt: 0.5 }}
                         >
-                          {formatTime(notification.createdAt)}
+                          {formatTime(notification.timestamp)}
                         </Typography>
                       </>
                     }
