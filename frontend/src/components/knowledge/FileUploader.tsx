@@ -61,38 +61,6 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   const [isUploading, setIsUploading] = React.useState(false);
   const fileInputRef = React.useRef<HTMLInputElement>(null);
 
-  // 處理檔案拖放
-  const handleDragOver = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(true);
-  }, []);
-
-  const handleDragLeave = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-  }, []);
-
-  const handleDrop = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    setIsDragging(false);
-    
-    const droppedFiles = Array.from(e.dataTransfer.files);
-    addFiles(droppedFiles);
-  }, []);
-
-  // 處理檔案選擇
-  const handleFileSelect = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    if (e.target.files) {
-      const selectedFiles = Array.from(e.target.files);
-      addFiles(selectedFiles);
-      
-      // 清空檔案輸入，以便可以再次選擇相同的檔案
-      if (fileInputRef.current) {
-        fileInputRef.current.value = '';
-      }
-    }
-  }, []);
-
   // 添加檔案
   const addFiles = React.useCallback((newFiles: File[]) => {
     // 檢查檔案數量限制
@@ -131,15 +99,48 @@ const FileUploader: React.FC<FileUploaderProps> = ({
     ]);
   }, [files.length, maxFiles, maxFileSize, addNotification, t]);
 
+  // 處理檔案拖放
+  const handleDragOver = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(true);
+  }, []);
+
+  const handleDragLeave = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+  }, []);
+
+  const handleDrop = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
+    e.preventDefault();
+    setIsDragging(false);
+    
+    const droppedFiles = Array.from(e.dataTransfer.files);
+    addFiles(droppedFiles);
+  }, [addFiles]);
+
+  // 處理檔案選擇
+  const handleFileSelect = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files) {
+      const selectedFiles = Array.from(e.target.files);
+      addFiles(selectedFiles);
+      
+      // 清空檔案輸入，以便可以再次選擇相同的檔案
+      if (fileInputRef.current) {
+        fileInputRef.current.value = '';
+      }
+    }
+  }, [addFiles, fileInputRef]);
+
+
   // 移除檔案
   const removeFile = React.useCallback((index: number) => {
     setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   }, []);
-
+// 上傳單個檔案
   // 上傳單個檔案
   const uploadFile = React.useCallback(async (fileInfo: FileInfo, index: number) => {
     // 更新檔案狀態為上傳中
-    setFiles(prevFiles => prevFiles.map((f, i) => 
+    setFiles(prevFiles => prevFiles.map((f, i) =>
       i === index ? { ...f, status: FileStatus.UPLOADING, progress: 0 } : f
     ));
     
@@ -156,7 +157,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
             const progress = Math.round((progressEvent.loaded * 100) / progressEvent.total);
             
             // 更新上傳進度
-            setFiles(prevFiles => prevFiles.map((f, i) => 
+            setFiles(prevFiles => prevFiles.map((f, i) =>
               i === index ? { ...f, progress } : f
             ));
           }
@@ -168,10 +169,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
         const knowledgeItemId = response.data.data.knowledgeItemId;
         
         // 更新檔案狀態為成功
-        setFiles(prevFiles => prevFiles.map((f, i) => 
-          i === index ? { 
-            ...f, 
-            status: FileStatus.SUCCESS, 
+        setFiles(prevFiles => prevFiles.map((f, i) =>
+          i === index ? {
+            ...f,
+            status: FileStatus.SUCCESS,
             progress: 100,
             knowledgeItemId
           } : f
@@ -185,10 +186,10 @@ const FileUploader: React.FC<FileUploaderProps> = ({
       console.error('檔案上傳錯誤:', error);
       
       // 更新檔案狀態為錯誤
-      setFiles(prevFiles => prevFiles.map((f, i) => 
-        i === index ? { 
-          ...f, 
-          status: FileStatus.ERROR, 
+      setFiles(prevFiles => prevFiles.map((f, i) =>
+        i === index ? {
+          ...f,
+          status: FileStatus.ERROR,
           error: error instanceof Error ? error.message : t('knowledge.fileUploader.uploadFailed')
         } : f
       ));
