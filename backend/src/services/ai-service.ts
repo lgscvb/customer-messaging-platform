@@ -8,6 +8,19 @@ import apiConfigService from './api-config-service';
 import embeddingService from './embedding-service';
 
 /**
+ * 擴展 KnowledgeItem 類型，添加相關性分數
+ */
+interface KnowledgeItemWithRelevance {
+  id: string;
+  title: string;
+  content: string;
+  category: string;
+  tags: string[];
+  relevance: number;
+  [key: string]: any;
+}
+
+/**
  * AI 提供者類型
  */
 export enum AIProvider {
@@ -126,13 +139,29 @@ class AIService {
       
       // 使用向量搜索相關知識
       const searchResults = await embeddingService.searchSimilarKnowledgeItems(query, maxResults);
-      const knowledgeItems = searchResults.map(result => result.knowledgeItem);
       
-      // 根據提供者生成回覆
-      let reply: AIReplyResult;
+      // 將 KnowledgeItem 轉換為 KnowledgeItemWithRelevance
+      const knowledgeItems: KnowledgeItemWithRelevance[] = searchResults.map(result => {
+        const item = result.knowledgeItem;
+        return {
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          category: item.category,
+          tags: item.tags || [],
+          relevance: result.similarity,
+          source: item.source,
+          sourceUrl: item.sourceUrl,
+          createdAt: item.createdAt,
+          updatedAt: item.updatedAt
+        };
+      });
       
       // 初始化 AI 模型
       await this.initAIModel();
+      
+      // 根據提供者生成回覆
+      let reply: AIReplyResult;
       
       if (this.provider === AIProvider.GOOGLE && this.vertexAI) {
         reply = await this.generateReplyWithGoogle(query, history, knowledgeItems, temperature, maxTokens);
@@ -141,6 +170,9 @@ class AIService {
       } else {
         throw new Error('AI 模型未初始化');
       }
+      
+      // 後處理回覆，提高質量
+      reply.reply = this.postProcessReply(reply.reply, query);
       
       logger.info(`已生成 AI 回覆，置信度: ${reply.confidence}`);
       
@@ -162,7 +194,7 @@ class AIService {
   private async generateReplyWithGoogle(
     query: string,
     history: Message[],
-    knowledgeItems: KnowledgeItem[],
+    knowledgeItems: KnowledgeItemWithRelevance[],
     temperature: number,
     maxTokens: number
   ): Promise<AIReplyResult> {
@@ -212,7 +244,7 @@ class AIService {
           id: item.id,
           title: item.title,
           content: item.content,
-          relevance: 0.9, // 這裡可以使用實際的相關性分數
+          relevance: item.relevance,
         })),
         metadata: {
           provider: AIProvider.GOOGLE,
@@ -240,7 +272,7 @@ class AIService {
   private async generateReplyWithOpenAI(
     query: string,
     history: Message[],
-    knowledgeItems: KnowledgeItem[],
+    knowledgeItems: KnowledgeItemWithRelevance[],
     temperature: number,
     maxTokens: number
   ): Promise<AIReplyResult> {
@@ -292,7 +324,7 @@ class AIService {
           id: item.id,
           title: item.title,
           content: item.content,
-          relevance: 0.85, // 這裡可以使用實際的相關性分數
+          relevance: item.relevance,
         })),
         metadata: {
           provider: AIProvider.OPENAI,
@@ -310,35 +342,127 @@ class AIService {
   }
   
   /**
+   * 後處理回覆，提高質量
+   * @param reply 原始回覆
+   * @param query 原始查詢
+   */
+  private postProcessReply(reply: string, query: string): string {
+    if (!reply) return '很抱歉，我無法生成回覆。請稍後再試。';
+    
+    let processedReply = reply;
+    
+    // 1. 修復常見格式問題
+    
+    // 移除多餘的空行
+    processedReply = processedReply.replace(/\n{3,}/g, '\n\n');
+    
+    // 確保段落之間有適當的空行
+    processedReply = processedReply.replace(/([。！？」』）])\n([^#\d\-*•])/g, '$1\n\n$2');
+    
+    // 修復缺少的標點符號
+    processedReply = processedReply.replace(/([^。！？」』）])\n\n/g, '$1。\n\n');
+    
+    // 2. 改進列表格式
+    
+    // 確保數字列表格式一致
+    processedReply = processedReply.replace(/^\s*(\d+)[.、]\s*/gm, '$1. ');
+    
+    // 確保項目符號列表格式一致
+    processedReply = processedReply.replace(/^\s*[•·]\s*/gm, '• ');
+    
+    // 3. 添加適當的結束語（如果沒有）
+    
+    const commonEndings = [
+      '希望以上信息對您有所幫助',
+      '如果您有任何其他問題',
+      '還有其他問題嗎',
+      '祝您',
+      '感謝您的詢問'
+    ];
+    
+    const hasEnding = commonEndings.some(ending => 
+      processedReply.toLowerCase().includes(ending.toLowerCase())
+    );
+    
+    if (!hasEnding) {
+      processedReply += '\n\n希望以上信息對您有所幫助。如果您有任何其他問題，請隨時詢問。';
+    }
+    
+    // 4. 確保回覆與問題相關
+    
+    // 檢查回覆是否包含查詢中的關鍵詞
+    const queryKeywords = query
+      .replace(/[，。？！、：；""''（）]/g, ' ')
+      .split(' ')
+      .filter(word => word.length > 1);
+    
+    const containsKeywords = queryKeywords.some(keyword => 
+      processedReply.includes(keyword)
+    );
+    
+    // 如果回覆似乎與問題無關，添加一個過渡語句
+    if (queryKeywords.length > 0 && !containsKeywords) {
+      const transitionPhrase = `關於您詢問的「${query}」，`;
+      processedReply = transitionPhrase + processedReply;
+    }
+    
+    return processedReply;
+  }
+  
+  /**
    * 構建提示
    * @param query 查詢
    * @param history 歷史消息
    * @param knowledgeItems 知識項目
    */
-  private buildPrompt(query: string, history: Message[], knowledgeItems: KnowledgeItem[]): string {
+  private buildPrompt(query: string, history: Message[], knowledgeItems: KnowledgeItemWithRelevance[]): string {
     // 構建系統提示
-    let systemPrompt = '你是一個專業的客服助手，負責回答客戶的問題。請根據提供的知識庫和歷史對話，生成準確、有幫助的回覆。';
+    let systemPrompt = `你是一個專業的客服助手，負責回答客戶的問題。你的目標是提供準確、有幫助且專業的回覆。
+請遵循以下指導原則：
+1. 始終基於提供的知識庫內容回答問題，不要編造信息
+2. 如果知識庫中沒有相關信息，請誠實地表示你無法提供具體答案，並建議客戶聯繫人工客服
+3. 保持禮貌、專業和同理心
+4. 回覆應簡潔明了，避免不必要的冗長
+5. 優先使用相關性較高的知識來回答問題
+6. 考慮對話歷史和上下文，保持連貫性
+7. 使用正式但友好的語氣
+8. 如果客戶問題涉及多個方面，請有條理地分點回答`;
     
-    // 添加知識庫
-    let knowledgePrompt = '以下是與客戶問題相關的知識：\n\n';
+    // 添加知識庫（帶相關性分數）
+    let knowledgePrompt = '以下是與客戶問題相關的知識（按相關性排序）：\n\n';
     
+    // 假設知識項目已經按相關性排序
     knowledgeItems.forEach((item, index) => {
-      knowledgePrompt += `知識 ${index + 1}：${item.title}\n${item.content}\n\n`;
+      // 使用項目的相關性分數
+      const relevance = item.relevance.toFixed(2);
+      knowledgePrompt += `知識 ${index + 1} [相關性: ${relevance}]：\n標題: ${item.title}\n內容: ${item.content}\n分類: ${item.category || '未分類'}\n標籤: ${item.tags?.join(', ') || '無標籤'}\n\n`;
     });
     
-    // 添加歷史對話
-    let historyPrompt = '以下是與客戶的歷史對話：\n\n';
+    // 添加歷史對話（限制最近的對話，避免提示過長）
+    let historyPrompt = '以下是與客戶的最近對話歷史（按時間順序）：\n\n';
     
-    history.forEach((message) => {
+    // 只取最近的 5 條消息
+    const recentHistory = history.slice(-5);
+    recentHistory.forEach((message) => {
       const role = message.direction === MessageDirection.INBOUND ? '客戶' : '客服';
-      historyPrompt += `${role}：${message.content}\n`;
+      const time = message.createdAt ? new Date(message.createdAt).toLocaleTimeString() : '未知時間';
+      historyPrompt += `[${time}] ${role}：${message.content}\n`;
     });
     
     // 添加當前問題
-    const questionPrompt = `客戶：${query}\n客服：`;
+    const questionPrompt = `當前問題 [${new Date().toLocaleTimeString()}]：\n客戶：${query}\n\n請根據以上信息生成專業的回覆：\n`;
+    
+    // 添加回覆格式指導
+    const formatPrompt = `
+回覆格式指導：
+1. 如果需要引用知識庫中的具體信息，請明確指出
+2. 如果客戶問題涉及多個方面，請使用編號列表回答
+3. 如果回覆包含步驟或流程，請使用有序列表
+4. 適當使用段落分隔不同主題
+5. 回覆結尾可以詢問客戶是否還有其他問題或需要進一步說明`;
     
     // 組合提示
-    const prompt = `${systemPrompt}\n\n${knowledgePrompt}\n${historyPrompt}\n${questionPrompt}`;
+    const prompt = `${systemPrompt}\n\n${formatPrompt}\n\n${knowledgePrompt}\n${historyPrompt}\n${questionPrompt}`;
     
     return prompt;
   }
