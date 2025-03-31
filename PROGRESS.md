@@ -140,7 +140,17 @@
   - [x] 優化回覆格式，確保段落之間有適當的空行
   - [x] 添加回覆與問題的相關性檢查，確保回覆與問題相關
   - [x] 實現智能結束語添加，提升回覆的專業性
-- [ ] 實現更多 AI 模型的支援
+- [x] 實現更多 AI 模型的支援
+  - [x] 添加 Claude 模型支援
+    - [x] 擴展 AIProvider 枚舉，添加 Claude 選項
+    - [x] 在 AIService 中添加 Claude API 金鑰和模型名稱
+    - [x] 實現 generateReplyWithClaude 方法
+    - [x] 更新 .env.example 文件，添加 Claude 環境變量
+  - [x] 添加 Llama 模型支援
+    - [x] 擴展 AIProvider 枚舉，添加 Llama 選項
+    - [x] 在 AIService 中添加 Llama API 金鑰和模型名稱
+    - [x] 實現 generateReplyWithLlama 方法
+    - [x] 更新 .env.example 文件，添加 Llama 環境變量
 - [x] 優化知識提取和組織功能
   - [x] 優化知識提取的提示工程，提高提取準確性
   - [x] 改進知識組織的提示工程，實現更智能的分類和標籤推薦
@@ -371,9 +381,21 @@
 
 我們最近修復了 i18n 國際化問題，確保所有頁面正確顯示繁體中文，提升了用戶體驗。我們還優化了響應式設計，確保在不同設備上的良好體驗，並實現了深色模式支援，讓用戶可以根據自己的偏好選擇亮色或暗色主題。我們也改進了表單驗證和錯誤提示，提供了更好的用戶反饋和指導。
 
-### 最新更新 (2025/3/31 下午6:16)
+### 最新更新 (2025/3/31 下午6:25)
 
 我們今天完成了以下工作：
+
+12. **實現更多 AI 模型的支援**：
+   - 添加 Claude 模型支援
+     - 擴展 AIProvider 枚舉，添加 Claude 選項
+     - 在 AIService 中添加 Claude API 金鑰和模型名稱
+     - 實現 generateReplyWithClaude 方法，使用 Claude API 生成回覆
+     - 更新 .env.example 文件，添加 Claude 環境變量
+   - 添加 Llama 模型支援
+     - 擴展 AIProvider 枚舉，添加 Llama 選項
+     - 在 AIService 中添加 Llama API 金鑰和模型名稱
+     - 實現 generateReplyWithLlama 方法，使用 Llama API 生成回覆
+     - 更新 .env.example 文件，添加 Llama 環境變量
 
 11. **優化知識提取和組織功能**：
    - 優化知識提取的提示工程，提高提取準確性
@@ -396,8 +418,6 @@
      - 改進標籤分析，識別過於分散或集中的標籤
      - 優化整體知識結構的一致性分析
      - 添加更具體的優化建議要求，包括預計影響和好處
-
-我們今天完成了以下工作：
 
 10. **改進回覆生成質量**：
    - 優化提示工程，添加更詳細的系統提示和格式指導
@@ -459,54 +479,3 @@
    - 為 ApiConfigController 編寫了全面的單元測試，覆蓋所有 API 端點
    - 測試了 getAllApiConfigs、getApiConfigById、createApiConfig 等基本功能
    - 測試了 getApiConfigByKey、getApiConfigsByType 等查詢功能
-   - 測試了 updateApiConfig、deleteApiConfig 等管理功能
-   - 測試了 getApiConfigValue、setApiConfigValue 等值操作功能
-   - 測試了各種錯誤情況的處理邏輯
-   - 確保了控制器層與服務層的正確交互
-
-1. **優化加載狀態和過渡動畫**：
-   - 在 MessageList.tsx 組件中添加了骨架屏加載效果，替代簡單的旋轉圓圈
-   - 添加了列表項目的淡入和增長效果，使消息列表加載更平滑
-   - 添加了過濾操作的加載狀態顯示
-   - 優化了列表項目的過渡動畫，使點擊和選擇更流暢
-   - 添加了各種元素的過渡效果，提升整體視覺體驗
-
-2. **修復 React 組件導入問題**：
-   - 修改了 React hooks 的導入方式，使用 React.useState 和 React.useEffect 而不是直接導入
-   - 解決了 TypeScript 類型錯誤
-
-3. **優化平台圖標顯示**：
-   - 使用 Box 組件創建自定義圓形圖標，替代之前使用的 MUI 圖標
-   - 統一了各平台圖標的顯示風格
-
-4. **優化移動設備上的交互體驗**：
-   - 添加了響應式設計，根據屏幕尺寸調整元素大小和間距
-   - 優化了觸摸交互，實現了滑動手勢功能（左右滑動消息項目來執行常見操作）
-   - 優化了列表項目的大小和間距，使其在小屏幕上更易於點擊
-   - 添加了滑動動作指示器，提供視覺反饋
-   - 優化了移動設備上的按鈕和輸入框大小，提高可用性
-
-5. **編寫單元測試和集成測試**：
-   - 為 MessageService 編寫了全面的單元測試，覆蓋所有方法
-   - 測試了 getMessages、getCustomerConversation、createMessage 等基本功能
-   - 測試了 sendMessage 方法對不同平台和消息類型的處理
-   - 測試了 markAsRead、markAllAsRead 和 getUnreadCount 等消息狀態管理功能
-   - 測試了 deleteMessage 和 getCustomerPlatformId 等輔助功能
-   - 確保了所有方法的錯誤處理邏輯正確
-   - 為 MessageController 編寫了全面的單元測試，覆蓋所有 API 端點
-   - 測試了請求參數處理和驗證邏輯
-   - 測試了成功和失敗情況下的響應處理
-   - 測試了各種錯誤情況的處理邏輯
-   - 確保了控制器層與服務層的正確交互
-   - 為 AIController 編寫了全面的單元測試，覆蓋所有 API 端點
-   - 測試了 generateReply、sendReply、searchKnowledge 和 evaluateReply 等 AI 相關功能
-   - 測試了 AI 回覆生成和發送的完整流程
-   - 測試了知識庫搜索和回覆品質評估功能
-   - 確保了 AI 服務與消息服務的正確集成
-   - 為 KnowledgeService 編寫了全面的單元測試，覆蓋所有方法
-   - 測試了 createKnowledgeItem、getKnowledgeItem、updateKnowledgeItem 等基本功能
-   - 測試了 deleteKnowledgeItem、searchKnowledgeItems 等知識庫管理功能
-   - 測試了 getCategories、getTags 等分類和標籤功能
-   - 測試了 bulkImport 等批量操作功能
-   - 確保了所有方法的錯誤處理邏輯正確
-   - 為 KnowledgeController 編寫了全面的單元測試，覆蓋所有 API 端點

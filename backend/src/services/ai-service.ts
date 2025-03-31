@@ -26,6 +26,8 @@ interface KnowledgeItemWithRelevance {
 export enum AIProvider {
   GOOGLE = 'google',
   OPENAI = 'openai',
+  CLAUDE = 'claude',
+  LLAMA = 'llama',
 }
 
 /**
@@ -73,8 +75,12 @@ class AIService {
   private provider: AIProvider;
   private vertexAI: VertexAI | null = null;
   private openAIApiKey: string = '';
+  private claudeApiKey: string = '';
+  private llamaApiKey: string = '';
   private openAIModel: string;
   private googleModel: string;
+  private claudeModel: string;
+  private llamaModel: string;
   
   /**
    * 構造函數
@@ -86,6 +92,8 @@ class AIService {
     // 設置模型名稱
     this.openAIModel = process.env.OPENAI_MODEL || 'gpt-4';
     this.googleModel = process.env.GOOGLE_MODEL || 'gemini-pro';
+    this.claudeModel = process.env.CLAUDE_MODEL || 'claude-3-opus-20240229';
+    this.llamaModel = process.env.LLAMA_MODEL || 'llama-3-70b-instruct';
     
     logger.info(`AI 服務初始化，使用提供者: ${this.provider}`);
   }
@@ -112,6 +120,16 @@ class AIService {
         this.openAIApiKey = await apiConfigService.getApiConfigValue('OPENAI_API_KEY');
         
         logger.info('已獲取 OpenAI API 金鑰');
+      } else if (this.provider === AIProvider.CLAUDE) {
+        // 獲取 Claude API 配置
+        this.claudeApiKey = await apiConfigService.getApiConfigValue('CLAUDE_API_KEY');
+        
+        logger.info('已獲取 Claude API 金鑰');
+      } else if (this.provider === AIProvider.LLAMA) {
+        // 獲取 Llama API 配置
+        this.llamaApiKey = await apiConfigService.getApiConfigValue('LLAMA_API_KEY');
+        
+        logger.info('已獲取 Llama API 金鑰');
       }
     } catch (error) {
       logger.error('初始化 AI 模型錯誤:', error);
@@ -167,6 +185,10 @@ class AIService {
         reply = await this.generateReplyWithGoogle(query, history, knowledgeItems, temperature, maxTokens);
       } else if (this.provider === AIProvider.OPENAI) {
         reply = await this.generateReplyWithOpenAI(query, history, knowledgeItems, temperature, maxTokens);
+      } else if (this.provider === AIProvider.CLAUDE) {
+        reply = await this.generateReplyWithClaude(query, history, knowledgeItems, temperature, maxTokens);
+      } else if (this.provider === AIProvider.LLAMA) {
+        reply = await this.generateReplyWithLlama(query, history, knowledgeItems, temperature, maxTokens);
       } else {
         throw new Error('AI 模型未初始化');
       }
@@ -337,6 +359,163 @@ class AIService {
       return reply;
     } catch (error) {
       logger.error('使用 OpenAI 生成回覆錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 使用 Claude 生成回覆
+   * @param query 查詢
+   * @param history 歷史消息
+   * @param knowledgeItems 知識項目
+   * @param temperature 溫度
+   * @param maxTokens 最大令牌數
+   */
+  private async generateReplyWithClaude(
+    query: string,
+    history: Message[],
+    knowledgeItems: KnowledgeItemWithRelevance[],
+    temperature: number,
+    maxTokens: number
+  ): Promise<AIReplyResult> {
+    try {
+      if (!this.claudeApiKey) {
+        throw new Error('Claude API 金鑰未設置');
+      }
+      
+      // 構建提示
+      const prompt = this.buildPrompt(query, history, knowledgeItems);
+      
+      // 使用 Claude API 生成回覆
+      logger.info('調用 Claude API');
+      
+      const response = await axios.post(
+        'https://api.anthropic.com/v1/messages',
+        {
+          model: this.claudeModel,
+          messages: [
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: maxTokens,
+          temperature: temperature,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'x-api-key': this.claudeApiKey,
+            'anthropic-version': '2023-06-01'
+          }
+        }
+      );
+      
+      const generatedText = response.data.content?.[0]?.text || '';
+      
+      // 計算置信度（基於回覆長度和知識項目數量）
+      const confidence = Math.min(
+        0.95,
+        0.7 + (generatedText.length / 1000) * 0.1 + (knowledgeItems.length / 10) * 0.1
+      );
+      
+      // 構建回覆
+      const reply: AIReplyResult = {
+        reply: generatedText,
+        confidence,
+        sources: knowledgeItems.map(item => ({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          relevance: item.relevance,
+        })),
+        metadata: {
+          provider: AIProvider.CLAUDE,
+          model: this.claudeModel,
+          temperature,
+          maxTokens,
+        },
+      };
+      
+      return reply;
+    } catch (error) {
+      logger.error('使用 Claude 生成回覆錯誤:', error);
+      throw error;
+    }
+  }
+  
+  /**
+   * 使用 Llama 生成回覆
+   * @param query 查詢
+   * @param history 歷史消息
+   * @param knowledgeItems 知識項目
+   * @param temperature 溫度
+   * @param maxTokens 最大令牌數
+   */
+  private async generateReplyWithLlama(
+    query: string,
+    history: Message[],
+    knowledgeItems: KnowledgeItemWithRelevance[],
+    temperature: number,
+    maxTokens: number
+  ): Promise<AIReplyResult> {
+    try {
+      if (!this.llamaApiKey) {
+        throw new Error('Llama API 金鑰未設置');
+      }
+      
+      // 構建提示
+      const prompt = this.buildPrompt(query, history, knowledgeItems);
+      
+      // 使用 Llama API 生成回覆
+      logger.info('調用 Llama API');
+      
+      // 假設 Llama API 使用類似 OpenAI 的接口
+      const response = await axios.post(
+        'https://api.llama-api.com/v1/chat/completions',
+        {
+          model: this.llamaModel,
+          messages: [
+            { role: 'system', content: '你是一個專業的客服助手，負責回答客戶的問題。' },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: maxTokens,
+          temperature: temperature,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.llamaApiKey}`
+          }
+        }
+      );
+      
+      const generatedText = response.data.choices?.[0]?.message?.content || '';
+      
+      // 計算置信度（基於回覆長度和知識項目數量）
+      const confidence = Math.min(
+        0.95,
+        0.7 + (generatedText.length / 1000) * 0.1 + (knowledgeItems.length / 10) * 0.1
+      );
+      
+      // 構建回覆
+      const reply: AIReplyResult = {
+        reply: generatedText,
+        confidence,
+        sources: knowledgeItems.map(item => ({
+          id: item.id,
+          title: item.title,
+          content: item.content,
+          relevance: item.relevance,
+        })),
+        metadata: {
+          provider: AIProvider.LLAMA,
+          model: this.llamaModel,
+          temperature,
+          maxTokens,
+        },
+      };
+      
+      return reply;
+    } catch (error) {
+      logger.error('使用 Llama 生成回覆錯誤:', error);
       throw error;
     }
   }
