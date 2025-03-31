@@ -426,6 +426,16 @@
    - 優化了 CI/CD 工作流程文件，改進部署流程，添加了代碼檢查、測試、構建和部署步驟
    - 添加了部署驗證步驟，確保部署成功
    - 添加了環境變量管理，支持開發和生產環境的不同配置
+### 最新更新 (2025/3/31 下午11:11)
+
+我們今天完成了以下工作：
+
+23. **修復 ai.test.ts 中的類型錯誤**：
+   - 修復了 ai.test.ts 文件中的類型錯誤，將 KnowledgeItemModel.search 替換為 KnowledgeItemExtension.search
+   - 修改了 jest.mock 的實現，以便正確模擬 KnowledgeItemExtension 對象
+   - 在每個測試中添加了正確引用 KnowledgeItemExtension 的代碼
+   - 解決了 KnowledgeItem 類型沒有 search 屬性的問題，確保測試能夠正確運行
+
 ### 最新更新 (2025/3/31 下午11:05)
 
 我們今天完成了以下工作：
