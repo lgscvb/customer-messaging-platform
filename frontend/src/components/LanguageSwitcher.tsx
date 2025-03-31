@@ -24,7 +24,7 @@ interface LanguageOption {
  * 允許用戶在不同語言之間切換
  */
 const LanguageSwitcher: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { i18n } = useTranslation();
   const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
