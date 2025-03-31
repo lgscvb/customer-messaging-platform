@@ -1,7 +1,6 @@
 "use client";
 
-import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import { io, Socket } from 'socket.io-client';
+import React from 'react';
 
 /**
  * 通知類型枚舉
@@ -18,7 +17,7 @@ export enum NotificationType {
  */
 export interface Notification {
   id: string;
-  type: NotificationType | 'info' | 'success' | 'warning' | 'error';
+  type: NotificationType;
   message: string;
   title?: string;
   timestamp: Date;
@@ -42,20 +41,19 @@ interface NotificationContextType {
  * 通知提供者屬性接口
  */
 interface NotificationProviderProps {
-  children: ReactNode;
+  children: React.ReactNode;
 }
 
 /**
  * 創建通知上下文
  */
-const NotificationContext = createContext<NotificationContextType | undefined>(undefined);
+const NotificationContext = React.createContext<NotificationContextType | undefined>(undefined);
 
 /**
  * 通知提供者組件
  */
 export const NotificationProvider: React.FC<NotificationProviderProps> = ({ children }) => {
-  const [notifications, setNotifications] = useState<Notification[]>([]);
-  const [socket, setSocket] = useState<Socket | null>(null);
+  const [notifications, setNotifications] = React.useState<Notification[]>([]);
   
   // 計算未讀通知數量
   const unreadCount = notifications.filter(notification => !notification.read).length;
@@ -108,31 +106,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
     setNotifications([]);
   };
   
-  /**
-   * 初始化 Socket.IO 連接
-   */
-  useEffect(() => {
-    // 只在客戶端執行
-    if (typeof window !== 'undefined') {
-      const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000';
-      const newSocket = io(apiUrl, {
-        path: '/socket.io',
-        transports: ['websocket'],
-      });
-      
-      setSocket(newSocket);
-      
-      // 監聽通知事件
-      newSocket.on('notification', (data: Omit<Notification, 'id' | 'timestamp' | 'read'>) => {
-        addNotification(data);
-      });
-      
-      // 清理函數
-      return () => {
-        newSocket.disconnect();
-      };
-    }
-  }, []);
+  // 注意：我們移除了 Socket.IO 相關的代碼，因為它在當前上下文中沒有被使用
   
   return (
     <NotificationContext.Provider
@@ -155,7 +129,7 @@ export const NotificationProvider: React.FC<NotificationProviderProps> = ({ chil
  * 使用通知上下文的 Hook
  */
 export const useNotification = (): NotificationContextType => {
-  const context = useContext(NotificationContext);
+  const context = React.useContext(NotificationContext);
   if (context === undefined) {
     throw new Error('useNotification must be used within a NotificationProvider');
   }
