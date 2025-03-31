@@ -24,6 +24,7 @@ import apiConfigRoutes from './routes/api-configs';
 import supervisedLearningRoutes from './routes/supervised-learning';
 import fileExtractionRoutes from './routes/file-extraction';
 import embeddingsRoutes from './routes/embeddings';
+import databaseShardingRoutes from './routes/database-sharding';
 
 // 創建 Express 應用
 const app = express();
@@ -67,6 +68,7 @@ app.use('/api/api-configs', apiConfigRoutes);
 app.use('/api/supervised-learning', supervisedLearningRoutes);
 app.use('/api/file-extraction', fileExtractionRoutes);
 app.use('/api/embeddings', embeddingsRoutes);
+app.use('/api/database-sharding', databaseShardingRoutes);
 
 // 健康檢查端點
 app.get('/health', (req: Request, res: Response) => {
