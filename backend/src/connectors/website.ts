@@ -336,6 +336,7 @@ class WebsiteConnector {
         customerId: customer.id,
         platformId: userId,
         platformType: PlatformType.WEBSITE,
+        platformCustomerId: userId, // 添加必要的 platformCustomerId 欄位
         platformData: {
           userInfo: userInfo || {},
         },
