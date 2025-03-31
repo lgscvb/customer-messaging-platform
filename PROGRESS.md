@@ -156,7 +156,14 @@
   - [x] 改進知識組織的提示工程，實現更智能的分類和標籤推薦
   - [x] 優化知識關聯生成，添加關聯理由說明
   - [x] 改進知識庫結構分析和優化建議生成
-- [ ] 實現更多進階 AI 功能
+- [x] 實現更多進階 AI 功能
+  - [x] 實現 AI 模型自動選擇功能
+    - [x] 添加 shouldAutoSelectModel 屬性，從環境變量中讀取
+    - [x] 實現 selectBestModel 方法，根據查詢複雜性和知識項目選擇最合適的 AI 模型
+    - [x] 實現 calculateQueryComplexity 方法，計算查詢的複雜性分數
+    - [x] 修改 generateReply 方法，使用自動選擇的模型
+    - [x] 更新 .env.example 文件，添加 AUTO_SELECT_MODEL 環境變量
+  - [ ] 實現更多進階 AI 功能
 
 ### 優化系統性能和擴展性
 - [x] 優化資料庫查詢和索引
@@ -381,9 +388,23 @@
 
 我們最近修復了 i18n 國際化問題，確保所有頁面正確顯示繁體中文，提升了用戶體驗。我們還優化了響應式設計，確保在不同設備上的良好體驗，並實現了深色模式支援，讓用戶可以根據自己的偏好選擇亮色或暗色主題。我們也改進了表單驗證和錯誤提示，提供了更好的用戶反饋和指導。
 
-### 最新更新 (2025/3/31 下午6:25)
+### 最新更新 (2025/3/31 下午9:22)
 
 我們今天完成了以下工作：
+
+14. **創建測試輔助函數和端到端測試**：
+   - 創建了 auth-helper.ts 測試輔助函數，用於創建測試用戶和獲取認證令牌
+   - 創建了 customer-helper.ts 測試輔助函數，用於創建測試客戶
+   - 創建了 message-helper.ts 測試輔助函數，用於創建測試消息和對話
+   - 創建了 knowledge-helper.ts 測試輔助函數，用於創建測試知識項目
+   - 創建了 AI 模型自動選擇功能的端到端測試，測試不同複雜度查詢下的模型選擇
+
+13. **實現 AI 模型自動選擇功能**：
+   - 添加 shouldAutoSelectModel 屬性，從環境變量中讀取
+   - 實現 selectBestModel 方法，根據查詢複雜性和知識項目選擇最合適的 AI 模型
+   - 實現 calculateQueryComplexity 方法，計算查詢的複雜性分數
+   - 修改 generateReply 方法，使用自動選擇的模型
+   - 更新 .env.example 文件，添加 AUTO_SELECT_MODEL 環境變量
 
 12. **實現更多 AI 模型的支援**：
    - 添加 Claude 模型支援
@@ -461,21 +482,3 @@
    - 創建了緩存工具類 (cache.ts)，提供內存緩存功能
    - 實現了緩存項的設置、獲取、刪除和清空功能
    - 添加了緩存過期時間和自動清理機制
-   - 實現了按前綴刪除緩存的功能
-   - 提供了 getOrSet 方法，簡化緩存使用流程
-   - 修改 api-config-service.ts，為所有讀取操作添加緩存
-   - 在寫入操作後自動清除相關緩存
-   - 設置了合理的緩存過期時間 (30 分鐘)
-   - 使用緩存鍵前綴區分不同類型的緩存
-
-6. **為 API 配置系統編寫單元測試**：
-   - 為 ApiConfigService 編寫了全面的單元測試，覆蓋所有方法
-   - 測試了 getAllApiConfigs、getAllActiveApiConfigs、getApiConfigById 等基本功能
-   - 測試了 getApiConfigByKey、getApiConfigsByType 等查詢功能
-   - 測試了 createApiConfig、updateApiConfig、deleteApiConfig 等管理功能
-   - 測試了 getApiConfigValue、setApiConfigValue 等值操作功能
-   - 測試了 getAiApiKey、getPlatformApiKey、getIntegrationApiKey 等特定功能
-   - 確保了所有方法的錯誤處理邏輯正確
-   - 為 ApiConfigController 編寫了全面的單元測試，覆蓋所有 API 端點
-   - 測試了 getAllApiConfigs、getApiConfigById、createApiConfig 等基本功能
-   - 測試了 getApiConfigByKey、getApiConfigsByType 等查詢功能
