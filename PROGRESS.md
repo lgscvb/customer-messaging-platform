@@ -421,9 +421,15 @@
    - 優化了 CI/CD 工作流程文件，改進部署流程，添加了代碼檢查、測試、構建和部署步驟
    - 添加了部署驗證步驟，確保部署成功
    - 添加了環境變量管理，支持開發和生產環境的不同配置
-### 最新更新 (2025/3/31 下午10:43)
+### 最新更新 (2025/3/31 下午10:51)
 
 我們今天完成了以下工作：
+
+21. **優化微服務配置**：
+   - 為 auth-service 添加了 jsconfig.json 配置文件，替代了 tsconfig.json
+   - 配置了適當的模塊解析選項，確保非相對路徑導入正常工作
+   - 設置了正確的 include 和 exclude 選項，確保只包含必要的文件
+   - 優化了 JavaScript 項目的開發體驗，提供更好的編輯器支持
 
 20. **實現更多微服務架構**：
    - 創建了微服務的目錄結構，包括 api-gateway、auth-service、message-service、ai-service、knowledge-service、platform-service 和 analytics-service
