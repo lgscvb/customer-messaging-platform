@@ -1,12 +1,12 @@
-import React, { useRef } from 'react';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  useTheme, 
+import React from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
   CircularProgress,
   Grid
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   Chart as ChartJS,
   ArcElement,
@@ -66,7 +66,7 @@ const PieChart: React.FC<PieChartProps> = ({
   animation = true,
 }) => {
   const theme = useTheme();
-  const chartRef = useRef<ChartJS>(null);
+  const chartRef = React.useRef<ChartJS>(null);
   
   // 默認顏色
   const defaultColors = [
