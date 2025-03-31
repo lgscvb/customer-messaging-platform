@@ -56,13 +56,13 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 }) => {
   const { t } = useTranslation();
   const { addNotification } = useNotifications();
-  const [files, setFiles] = React.useState<FileInfo[]>([]);
-  const [isDragging, setIsDragging] = React.useState(false);
-  const [isUploading, setIsUploading] = React.useState(false);
-  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const [files, setFiles] = useState<FileInfo[]>([]);
+  const [isDragging, setIsDragging] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 添加檔案
-  const addFiles = React.useCallback((newFiles: File[]) => {
+  const addFiles = useCallback((newFiles: File[]) => {
     // 檢查檔案數量限制
     if (files.length + newFiles.length > maxFiles) {
       addNotification({
@@ -100,17 +100,17 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   }, [files.length, maxFiles, maxFileSize, addNotification, t]);
 
   // 處理檔案拖放
-  const handleDragOver = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(true);
   }, []);
 
-  const handleDragLeave = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDragLeave = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
   }, []);
 
-  const handleDrop = React.useCallback((e: React.DragEvent<HTMLDivElement>) => {
+  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setIsDragging(false);
     
@@ -119,7 +119,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   }, [addFiles]);
 
   // 處理檔案選擇
-  const handleFileSelect = React.useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileSelect = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       const selectedFiles = Array.from(e.target.files);
       addFiles(selectedFiles);
@@ -133,12 +133,11 @@ const FileUploader: React.FC<FileUploaderProps> = ({
 
 
   // 移除檔案
-  const removeFile = React.useCallback((index: number) => {
+  const removeFile = useCallback((index: number) => {
     setFiles(prevFiles => prevFiles.filter((_, i) => i !== index));
   }, []);
-// 上傳單個檔案
   // 上傳單個檔案
-  const uploadFile = React.useCallback(async (fileInfo: FileInfo, index: number) => {
+  const uploadFile = useCallback(async (fileInfo: FileInfo, index: number) => {
     // 更新檔案狀態為上傳中
     setFiles(prevFiles => prevFiles.map((f, i) =>
       i === index ? { ...f, status: FileStatus.UPLOADING, progress: 0 } : f
@@ -199,7 +198,7 @@ const FileUploader: React.FC<FileUploaderProps> = ({
   }, [t]);
 
   // 上傳所有檔案
-  const uploadAllFiles = React.useCallback(async () => {
+  const uploadAllFiles = useCallback(async () => {
     if (files.length === 0) {
       addNotification({
         type: NotificationType.WARNING,
