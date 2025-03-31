@@ -87,8 +87,9 @@ describe('AIService', () => {
       expect(result.knowledgeSources[0]).toHaveProperty('id', 'knowledge-1');
       expect(result.knowledgeSources[1]).toHaveProperty('id', 'knowledge-2');
 
-      // 驗證 KnowledgeItemModel.search 被調用
-      expect(KnowledgeItemModel.search).toHaveBeenCalledWith('我想了解智能家居系統的價格');
+      // 驗證 KnowledgeItemExtension.search 被調用
+      const { KnowledgeItemExtension } = require('../../models/KnowledgeItem');
+      expect(KnowledgeItemExtension.search).toHaveBeenCalledWith('我想了解智能家居系統的價格');
 
       // 驗證 LLMChain.call 被調用
       expect(LLMChain.prototype.call).toHaveBeenCalled();
