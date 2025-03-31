@@ -88,7 +88,7 @@ const NotificationToast: React.FC<NotificationToastProps> = ({
           }}
         >
           <Typography variant="caption">
-            {formatTime(notification.createdAt)}
+            {formatTime(notification.timestamp)}
           </Typography>
           {notification.link && (
             <Typography 
