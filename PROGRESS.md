@@ -395,6 +395,12 @@
    - 測試了 AI 回覆生成和發送的完整流程
    - 測試了知識庫搜索和回覆品質評估功能
    - 確保了 AI 服務與消息服務的正確集成
+   - 為 KnowledgeService 編寫了全面的單元測試，覆蓋所有方法
+   - 測試了 createKnowledgeItem、getKnowledgeItem、updateKnowledgeItem 等基本功能
+   - 測試了 deleteKnowledgeItem、searchKnowledgeItems 等知識庫管理功能
+   - 測試了 getCategories、getTags 等分類和標籤功能
+   - 測試了 bulkImport 等批量操作功能
+   - 確保了所有方法的錯誤處理邏輯正確
 
 這些優化大大提升了用戶體驗，使界面更加流暢和專業。加載狀態和過渡動畫的改進使用戶在等待數據加載時有更好的視覺反饋，減少了等待的焦慮感。骨架屏的添加也使界面在加載過程中保持穩定，避免了內容加載時的跳動。移動設備上的交互體驗優化使應用在手機和平板電腦上更易於使用，提高了用戶滿意度。
 
