@@ -1,12 +1,11 @@
-import React, { useEffect, useRef } from 'react';
-import { 
-  Box, 
-  Paper, 
-  Typography, 
-  useTheme, 
-  CircularProgress,
-  Skeleton
+import React from 'react';
+import {
+  Box,
+  Paper,
+  Typography,
+  CircularProgress
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -85,7 +84,7 @@ const LineChart: React.FC<LineChartProps> = ({
   animation = true,
 }) => {
   const theme = useTheme();
-  const chartRef = useRef<ChartJS>(null);
+  const chartRef = React.useRef<ChartJS>(null);
   
   // 默認顏色
   const defaultColors = [
@@ -193,7 +192,6 @@ const LineChart: React.FC<LineChartProps> = ({
         grid: {
           display: showGrid,
           color: theme.palette.divider,
-          drawBorder: false,
         },
         title: {
           display: !!xAxisLabel,
@@ -216,7 +214,6 @@ const LineChart: React.FC<LineChartProps> = ({
         grid: {
           display: showGrid,
           color: theme.palette.divider,
-          drawBorder: false,
         },
         title: {
           display: !!yAxisLabel,
