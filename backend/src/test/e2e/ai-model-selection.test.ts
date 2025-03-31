@@ -18,7 +18,7 @@ describe('AI 模型自動選擇功能端到端測試', () => {
   beforeAll(async () => {
     // 創建測試用戶並獲取認證令牌
     const user = await createTestUser();
-    authToken = await getAuthToken(user.email, 'password123');
+    authToken = await getAuthToken(user.username, 'password123');
 
     // 創建測試客戶
     const customer = await createTestCustomer();
