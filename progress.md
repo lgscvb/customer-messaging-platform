@@ -414,9 +414,15 @@
 我們還成功實現了監督式學習機制，允許系統從人工修改的 AI 回覆中學習並改進。這個機制包括從人工修改中學習、知識項目生成、改進建議生成和學習統計與分析等功能。這將大大提高 AI 回覆的質量，並使系統能夠不斷學習和改進。
 
 我們最近修復了 i18n 國際化問題，確保所有頁面正確顯示繁體中文，提升了用戶體驗。我們還優化了響應式設計，確保在不同設備上的良好體驗，並實現了深色模式支援，讓用戶可以根據自己的偏好選擇亮色或暗色主題。我們也改進了表單驗證和錯誤提示，提供了更好的用戶反饋和指導。
-### 最新更新 (2025/4/1 上午12:23)
+### 最新更新 (2025/4/1 上午12:25)
 
 我們今天完成了以下工作：
+
+37. **修復 NotificationContainer.tsx 中的 TypeScript 錯誤**：
+   - 修正了 useEffect 的使用方式，通過 React 命名空間訪問 (React.useEffect)
+   - 修正了 clearAllNotifications 方法名為 clearAll，與 NotificationContextType 中定義的一致
+   - 移除了 notification.link 屬性的引用，因為 Notification 接口中沒有定義此屬性
+   - 確保通知容器組件能夠正確編譯和運行，沒有 TypeScript 錯誤
 
 36. **修復 NotificationToast.tsx 中的屬性名稱不匹配問題**：
    - 將 `notification.createdAt` 修改為 `notification.timestamp`，使其與 NotificationContext.tsx 中的 Notification 接口定義保持一致
