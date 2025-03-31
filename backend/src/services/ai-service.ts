@@ -1,7 +1,11 @@
-import KnowledgeItem, { KnowledgeItemExtension } from '../models/KnowledgeItem';
+import { VertexAI } from '@google-cloud/vertexai';
+import axios from 'axios';
+import KnowledgeItem from '../models/KnowledgeItem';
 import { Message } from '../models/Message';
 import { MessageDirection } from '../types/platform';
 import logger from '../utils/logger';
+import apiConfigService from './api-config-service';
+import embeddingService from './embedding-service';
 
 /**
  * AI 提供者類型
@@ -54,6 +58,10 @@ export interface KnowledgeSearchOptions {
  */
 class AIService {
   private provider: AIProvider;
+  private vertexAI: VertexAI | null = null;
+  private openAIApiKey: string = '';
+  private openAIModel: string;
+  private googleModel: string;
   
   /**
    * 構造函數
@@ -62,7 +70,40 @@ class AIService {
     // 從環境變量獲取 AI 提供者
     this.provider = (process.env.AI_PROVIDER as AIProvider) || AIProvider.GOOGLE;
     
+    // 設置模型名稱
+    this.openAIModel = process.env.OPENAI_MODEL || 'gpt-4';
+    this.googleModel = process.env.GOOGLE_MODEL || 'gemini-pro';
+    
     logger.info(`AI 服務初始化，使用提供者: ${this.provider}`);
+  }
+  
+  /**
+   * 初始化 AI 模型
+   */
+  private async initAIModel(): Promise<void> {
+    try {
+      if (this.provider === AIProvider.GOOGLE && !this.vertexAI) {
+        // 獲取 Google API 配置
+        const projectId = await apiConfigService.getApiConfigValue('GOOGLE_PROJECT_ID');
+        const location = await apiConfigService.getApiConfigValue('GOOGLE_LOCATION', 'us-central1');
+        
+        // 初始化 Google Vertex AI
+        this.vertexAI = new VertexAI({
+          project: projectId,
+          location: location,
+        });
+        
+        logger.info('已初始化 Google Vertex AI');
+      } else if (this.provider === AIProvider.OPENAI) {
+        // 獲取 OpenAI API 配置
+        this.openAIApiKey = await apiConfigService.getApiConfigValue('OPENAI_API_KEY');
+        
+        logger.info('已獲取 OpenAI API 金鑰');
+      }
+    } catch (error) {
+      logger.error('初始化 AI 模型錯誤:', error);
+      throw error;
+    }
   }
   
   /**
@@ -83,19 +124,22 @@ class AIService {
       // 獲取客戶歷史消息
       const history = await this.getCustomerMessageHistory(customerId);
       
-      // 搜索相關知識
-      const knowledgeItems = await this.searchKnowledge({
-        query,
-        maxResults,
-      });
+      // 使用向量搜索相關知識
+      const searchResults = await embeddingService.searchSimilarKnowledgeItems(query, maxResults);
+      const knowledgeItems = searchResults.map(result => result.knowledgeItem);
       
       // 根據提供者生成回覆
       let reply: AIReplyResult;
       
-      if (this.provider === AIProvider.GOOGLE) {
+      // 初始化 AI 模型
+      await this.initAIModel();
+      
+      if (this.provider === AIProvider.GOOGLE && this.vertexAI) {
         reply = await this.generateReplyWithGoogle(query, history, knowledgeItems, temperature, maxTokens);
-      } else {
+      } else if (this.provider === AIProvider.OPENAI) {
         reply = await this.generateReplyWithOpenAI(query, history, knowledgeItems, temperature, maxTokens);
+      } else {
+        throw new Error('AI 模型未初始化');
       }
       
       logger.info(`已生成 AI 回覆，置信度: ${reply.confidence}`);
@@ -123,28 +167,56 @@ class AIService {
     maxTokens: number
   ): Promise<AIReplyResult> {
     try {
-      // 這裡是 Google Vertex AI 的實現
-      // 在實際實現中，我們需要使用 Google Vertex AI SDK
+      if (!this.vertexAI) {
+        throw new Error('Google Vertex AI 未初始化');
+      }
       
       // 構建提示
       const prompt = this.buildPrompt(query, history, knowledgeItems);
       
-      // 模擬 API 調用
+      // 使用 Google Vertex AI 生成回覆
       logger.info('調用 Google Vertex AI API');
       
-      // 模擬回覆
+      const generativeModel = this.vertexAI.getGenerativeModel({
+        model: this.googleModel,
+      });
+      
+      const result = await generativeModel.generateContent({
+        contents: [{ role: 'user', parts: [{ text: prompt }] }],
+        generationConfig: {
+          temperature: temperature,
+          maxOutputTokens: maxTokens,
+        },
+      });
+      
+      const response = result.response;
+      let generatedText = '';
+      
+      if (response && response.candidates && response.candidates.length > 0 &&
+          response.candidates[0].content && response.candidates[0].content.parts &&
+          response.candidates[0].content.parts.length > 0) {
+        generatedText = response.candidates[0].content.parts[0].text || '';
+      }
+      
+      // 計算置信度（基於回覆長度和知識項目數量）
+      const confidence = Math.min(
+        0.95,
+        0.7 + (generatedText.length / 1000) * 0.1 + (knowledgeItems.length / 10) * 0.1
+      );
+      
+      // 構建回覆
       const reply: AIReplyResult = {
-        reply: `這是一個使用 Google Vertex AI 生成的回覆，基於您的問題: "${query}"。我們找到了 ${knowledgeItems.length} 個相關知識項目。`,
-        confidence: 0.85,
+        reply: generatedText || `無法生成回覆，請稍後再試。`,
+        confidence,
         sources: knowledgeItems.map(item => ({
           id: item.id,
           title: item.title,
           content: item.content,
-          relevance: 0.9,
+          relevance: 0.9, // 這裡可以使用實際的相關性分數
         })),
         metadata: {
           provider: AIProvider.GOOGLE,
-          model: 'text-bison',
+          model: this.googleModel,
           temperature,
           maxTokens,
         },
@@ -173,28 +245,58 @@ class AIService {
     maxTokens: number
   ): Promise<AIReplyResult> {
     try {
-      // 這裡是 OpenAI 的實現
-      // 在實際實現中，我們需要使用 OpenAI SDK
+      if (!this.openAIApiKey) {
+        throw new Error('OpenAI API 金鑰未設置');
+      }
       
       // 構建提示
       const prompt = this.buildPrompt(query, history, knowledgeItems);
       
-      // 模擬 API 調用
+      // 使用 OpenAI API 生成回覆
       logger.info('調用 OpenAI API');
       
-      // 模擬回覆
+      const response = await axios.post(
+        'https://api.openai.com/v1/chat/completions',
+        {
+          model: this.openAIModel,
+          messages: [
+            { role: 'system', content: '你是一個專業的客服助手，負責回答客戶的問題。' },
+            { role: 'user', content: prompt }
+          ],
+          max_tokens: maxTokens,
+          temperature: temperature,
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.openAIApiKey}`
+          }
+        }
+      );
+      
+      const chatCompletion = response.data;
+      
+      const generatedText = chatCompletion.choices[0]?.message?.content || '';
+      
+      // 計算置信度（基於回覆長度和知識項目數量）
+      const confidence = Math.min(
+        0.95,
+        0.7 + (generatedText.length / 1000) * 0.1 + (knowledgeItems.length / 10) * 0.1
+      );
+      
+      // 構建回覆
       const reply: AIReplyResult = {
-        reply: `這是一個使用 OpenAI 生成的回覆，基於您的問題: "${query}"。我們找到了 ${knowledgeItems.length} 個相關知識項目。`,
-        confidence: 0.9,
+        reply: generatedText,
+        confidence,
         sources: knowledgeItems.map(item => ({
           id: item.id,
           title: item.title,
           content: item.content,
-          relevance: 0.85,
+          relevance: 0.85, // 這裡可以使用實際的相關性分數
         })),
         metadata: {
           provider: AIProvider.OPENAI,
-          model: 'gpt-4',
+          model: this.openAIModel,
           temperature,
           maxTokens,
         },
@@ -278,20 +380,30 @@ class AIService {
         tags,
       } = options;
       
-      // 使用 KnowledgeItemExtension 的 search 方法
-      const knowledgeItems = await KnowledgeItemExtension.search(query, maxResults, 0);
+      // 使用向量搜索
+      const searchResults = await embeddingService.searchSimilarKnowledgeItems(query, maxResults);
       
-      // 模擬相關性排序
-      // 在實際實現中，我們需要根據向量相似度進行排序
-      const sortedItems = knowledgeItems.sort((a: KnowledgeItem, b: KnowledgeItem) => {
-        const aRelevance = this.calculateRelevance(a, query);
-        const bRelevance = this.calculateRelevance(b, query);
-        return bRelevance - aRelevance;
-      });
+      // 過濾分類和標籤（如果指定）
+      let filteredResults = searchResults;
       
-      logger.info(`已搜索知識庫，找到 ${sortedItems.length} 個相關項目`);
+      if (categories && categories.length > 0) {
+        filteredResults = filteredResults.filter(result =>
+          categories.includes(result.knowledgeItem.category)
+        );
+      }
       
-      return sortedItems;
+      if (tags && tags.length > 0) {
+        filteredResults = filteredResults.filter(result =>
+          result.knowledgeItem.tags.some(tag => tags.includes(tag))
+        );
+      }
+      
+      // 提取知識項目
+      const knowledgeItems = filteredResults.map(result => result.knowledgeItem);
+      
+      logger.info(`已搜索知識庫，找到 ${knowledgeItems.length} 個相關項目`);
+      
+      return knowledgeItems;
     } catch (error) {
       logger.error('搜索知識庫錯誤:', error);
       throw error;
@@ -299,9 +411,10 @@ class AIService {
   }
   
   /**
-   * 計算相關性
+   * 計算相關性（已棄用，使用向量相似度代替）
    * @param item 知識項目
    * @param query 查詢
+   * @deprecated
    */
   private calculateRelevance(item: KnowledgeItem, query: string): number {
     // 在實際實現中，我們需要使用向量相似度計算
