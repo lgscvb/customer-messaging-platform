@@ -23,14 +23,18 @@ import {
   Skeleton,
   Fade,
   Grow,
-  Collapse
+  Collapse,
+  Button
 } from '@mui/material';
 import InputAdornment from '@mui/material/InputAdornment';
 import { 
   Search as SearchIcon, 
   FilterList as FilterIcon,
   Facebook as FacebookIcon,
-  Instagram as InstagramIcon
+  Instagram as InstagramIcon,
+  Refresh as RefreshIcon,
+  CheckCircle as CheckCircleIcon,
+  Close as CloseIcon
 } from '@mui/icons-material';
 import { formatDistanceToNow } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
@@ -145,9 +149,11 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
   const [messages, setMessages] = React.useState<Message[]>([]);
   const [filteredMessages, setFilteredMessages] = React.useState<Message[]>([]);
   const [loading, setLoading] = React.useState(true);
+  const [refreshing, setRefreshing] = React.useState(false);
   const [searchQuery, setSearchQuery] = React.useState('');
   const [activeTab, setActiveTab] = React.useState(0);
   const [isFiltering, setIsFiltering] = React.useState(false);
+  const [swipeAction, setSwipeAction] = React.useState<{ messageId: string, action: 'resolve' | 'close' | null }>({ messageId: '', action: null });
   
   // 標籤選項
   const tabs = [
@@ -178,6 +184,7 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
         // 添加延遲以確保骨架屏顯示足夠長的時間，提升用戶體驗
         setTimeout(() => {
           setLoading(false);
+          setRefreshing(false);
         }, 800);
       }
     };
@@ -261,6 +268,16 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
           msg.id === messageId ? { ...msg, status } : msg
         )
       );
+      
+      // 重置滑動動作
+      setSwipeAction({ messageId: '', action: null });
+      
+      // 顯示成功通知
+      addNotification({
+        type: 'success',
+        title: t('messages.statusUpdate.success'),
+        message: t(`messages.statusUpdate.${status.toLowerCase()}`)
+      });
     } catch (error) {
       console.error('更新消息狀態錯誤:', error);
       addNotification({
@@ -281,6 +298,99 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
     });
   };
   
+  /**
+   * 處理刷新
+   */
+  const handleRefresh = () => {
+    setRefreshing(true);
+    // 重新獲取消息列表
+    const fetchMessages = async () => {
+      try {
+        const response = await api.get('/messages');
+        setMessages(response.data);
+        setFilteredMessages(response.data);
+        
+        // 顯示成功通知
+        addNotification({
+          type: 'success',
+          title: t('messages.refresh.success'),
+          message: t('messages.refresh.message')
+        });
+      } catch (error) {
+        console.error('獲取消息列表錯誤:', error);
+        addNotification({
+          type: 'error',
+          title: t('messages.errors.fetchTitle'),
+          message: t('messages.errors.fetchMessage')
+        });
+      } finally {
+        setTimeout(() => {
+          setRefreshing(false);
+        }, 500);
+      }
+    };
+    
+    fetchMessages();
+  };
+  
+  /**
+   * 處理滑動開始
+   */
+  const handleSwipeStart = (messageId: string) => {
+    return (event: React.TouchEvent) => {
+      const touch = event.touches[0];
+      (event.currentTarget as any).startX = touch.clientX;
+    };
+  };
+  
+  /**
+   * 處理滑動移動
+   */
+  const handleSwipeMove = (messageId: string, message: Message) => {
+    return (event: React.TouchEvent) => {
+      const touch = event.touches[0];
+      const startX = (event.currentTarget as any).startX;
+      if (!startX) return;
+      
+      const currentX = touch.clientX;
+      const diff = currentX - startX;
+      
+      // 只處理左右滑動
+      if (Math.abs(diff) > 50) {
+        // 向左滑動 - 解決
+        if (diff < 0 && message.status !== MessageStatus.RESOLVED) {
+          setSwipeAction({ messageId, action: 'resolve' });
+        }
+        // 向右滑動 - 關閉
+        else if (diff > 0 && message.status !== MessageStatus.CLOSED) {
+          setSwipeAction({ messageId, action: 'close' });
+        }
+      } else {
+        setSwipeAction({ messageId: '', action: null });
+      }
+    };
+  };
+  
+  /**
+   * 處理滑動結束
+   */
+  const handleSwipeEnd = (messageId: string, message: Message) => {
+    return (event: React.TouchEvent) => {
+      // 如果有滑動動作，執行相應操作
+      if (swipeAction.messageId === messageId) {
+        if (swipeAction.action === 'resolve') {
+          updateMessageStatus(messageId, MessageStatus.RESOLVED);
+        } else if (swipeAction.action === 'close') {
+          updateMessageStatus(messageId, MessageStatus.CLOSED);
+        }
+      }
+      
+      // 重置滑動動作
+      setSwipeAction({ messageId: '', action: null });
+      (event.currentTarget as any).startX = null;
+    };
+  };
+  
   return (
     <Paper 
       elevation={0} 
@@ -288,38 +398,50 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
         height: '100%', 
         display: 'flex', 
         flexDirection: 'column',
-        borderRight: '1px solid',
+        borderRight: { xs: 'none', sm: '1px solid' },
         borderColor: 'divider'
       }}
     >
-      <Box sx={{ p: 2, borderBottom: '1px solid', borderColor: 'divider' }}>
-        <Typography variant="h6" fontWeight="bold" sx={{ mb: 2 }}>
+      <Box sx={{ 
+        p: { xs: 1.5, sm: 2 }, 
+        borderBottom: '1px solid', 
+        borderColor: 'divider',
+        position: 'sticky',
+        top: 0,
+        zIndex: 10,
+        backgroundColor: 'background.paper'
+      }}>
+        <Typography variant="h6" fontWeight="bold" sx={{ mb: { xs: 1.5, sm: 2 } }}>
           {t('messages.title')}
         </Typography>
         
-        <TextField
-          fullWidth
-          placeholder={t('messages.search')}
-          variant="outlined"
-          size="small"
-          value={searchQuery}
-          onChange={handleSearchChange}
-          InputProps={{
-            startAdornment: (
-              <InputAdornment position="start">
-                <SearchIcon />
-              </InputAdornment>
-            ),
-            endAdornment: (
-              <InputAdornment position="end">
-                <IconButton size="small">
-                  <FilterIcon />
-                </IconButton>
-              </InputAdornment>
-            )
-          }}
-          sx={{ mb: 2 }}
-        />
+        <Box sx={{ display: 'flex', gap: 1, mb: 2 }}>
+          <TextField
+            fullWidth
+            placeholder={t('messages.search')}
+            variant="outlined"
+            size="small"
+            value={searchQuery}
+            onChange={handleSearchChange}
+            InputProps={{
+              startAdornment: (
+                <InputAdornment position="start">
+                  <SearchIcon />
+                </InputAdornment>
+              )
+            }}
+          />
+          <IconButton 
+            onClick={handleRefresh}
+            sx={{ 
+              backgroundColor: 'action.selected',
+              borderRadius: 1
+            }}
+            disabled={refreshing}
+          >
+            <RefreshIcon />
+          </IconButton>
+        </Box>
         
         <Tabs 
           value={activeTab} 
@@ -348,7 +470,14 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
         </Tabs>
       </Box>
       
-      <Box sx={{ flexGrow: 1, overflow: 'auto' }}>
+      <Box 
+        sx={{ 
+          flexGrow: 1, 
+          overflow: 'auto',
+          position: 'relative',
+          WebkitOverflowScrolling: 'touch' // 改善移動設備上的滾動體驗
+        }}
+      >
         {loading ? (
           <Fade in={loading} timeout={500}>
             <Box>
@@ -385,18 +514,50 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
                       alignItems="flex-start"
                       selected={selectedMessageId === message.id}
                       onClick={() => handleSelectMessage(message)}
+                      onTouchStart={handleSwipeStart(message.id)}
+                      onTouchMove={handleSwipeMove(message.id, message)}
+                      onTouchEnd={handleSwipeEnd(message.id, message)}
                       sx={{ 
-                        px: 2, 
-                        py: 1.5,
+                        px: { xs: 1.5, sm: 2 }, 
+                        py: { xs: 2, sm: 1.5 },
                         backgroundColor: selectedMessageId === message.id 
                           ? 'action.selected' 
                           : 'background.paper',
                         '&:hover': {
                           backgroundColor: 'action.hover',
                         },
-                        transition: 'background-color 0.3s ease'
+                        transition: 'all 0.3s ease',
+                        position: 'relative',
+                        overflow: 'hidden'
                       }}
                     >
+                      {/* 滑動動作指示器 */}
+                      {swipeAction.messageId === message.id && swipeAction.action && (
+                        <Box
+                          sx={{
+                            position: 'absolute',
+                            top: 0,
+                            left: swipeAction.action === 'close' ? 0 : 'auto',
+                            right: swipeAction.action === 'resolve' ? 0 : 'auto',
+                            bottom: 0,
+                            width: '30%',
+                            backgroundColor: swipeAction.action === 'resolve' 
+                              ? `${StatusColor[MessageStatus.RESOLVED]}80` 
+                              : `${StatusColor[MessageStatus.CLOSED]}80`,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            zIndex: 1
+                          }}
+                        >
+                          {swipeAction.action === 'resolve' ? (
+                            <CheckCircleIcon sx={{ color: 'white' }} />
+                          ) : (
+                            <CloseIcon sx={{ color: 'white' }} />
+                          )}
+                        </Box>
+                      )}
+                      
                       <ListItemAvatar>
                         <Badge
                           overlap="circular"
@@ -417,7 +578,10 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
                           <Avatar 
                             alt={message.customer.name} 
                             src={message.customer.avatar}
-                            sx={{ width: 48, height: 48 }}
+                            sx={{ 
+                              width: { xs: 56, sm: 48 }, 
+                              height: { xs: 56, sm: 48 } 
+                            }}
                           >
                             {message.customer.name.charAt(0)}
                           </Avatar>
@@ -427,10 +591,18 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
                       <ListItemText
                         primary={
                           <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <Typography variant="subtitle1" fontWeight="medium">
+                            <Typography 
+                              variant="subtitle1" 
+                              fontWeight="medium"
+                              sx={{ fontSize: { xs: '1rem', sm: 'inherit' } }}
+                            >
                               {message.customer.name}
                             </Typography>
-                            <Typography variant="caption" color="text.secondary">
+                            <Typography 
+                              variant="caption" 
+                              color="text.secondary"
+                              sx={{ fontSize: { xs: '0.75rem', sm: 'inherit' } }}
+                            >
                               {formatTime(message.createdAt)}
                             </Typography>
                           </Box>
@@ -446,13 +618,15 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
                                 display: '-webkit-box',
                                 WebkitLineClamp: 2,
                                 WebkitBoxOrient: 'vertical',
-                                mb: 0.5
+                                mb: 0.5,
+                                fontSize: { xs: '0.9rem', sm: 'inherit' },
+                                lineHeight: { xs: 1.5, sm: 'inherit' }
                               }}
                             >
                               {message.content}
                             </Typography>
                             
-                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+                            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, flexWrap: 'wrap' }}>
                               <Chip
                                 size="small"
                                 label={t(`messages.status.${message.status.toLowerCase()}`)}
@@ -460,8 +634,9 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
                                   backgroundColor: `${StatusColor[message.status]}20`,
                                   color: StatusColor[message.status],
                                   fontWeight: 'medium',
-                                  height: 24,
-                                  transition: 'all 0.3s ease'
+                                  height: { xs: 28, sm: 24 },
+                                  transition: 'all 0.3s ease',
+                                  fontSize: { xs: '0.8rem', sm: 'inherit' }
                                 }}
                               />
                               
@@ -473,8 +648,9 @@ const MessageList: React.FC<MessageListProps> = ({ onSelectMessage, selectedMess
                                     backgroundColor: '#8C6EFF20',
                                     color: '#8C6EFF',
                                     fontWeight: 'medium',
-                                    height: 24,
-                                    transition: 'all 0.3s ease'
+                                    height: { xs: 28, sm: 24 },
+                                    transition: 'all 0.3s ease',
+                                    fontSize: { xs: '0.8rem', sm: 'inherit' }
                                   }}
                                 />
                               )}
