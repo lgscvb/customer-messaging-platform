@@ -73,6 +73,7 @@ export interface KnowledgeSearchOptions {
  */
 class AIService {
   private provider: AIProvider;
+  private shouldAutoSelectModel: boolean;
   private vertexAI: VertexAI | null = null;
   private openAIApiKey: string = '';
   private claudeApiKey: string = '';
@@ -89,13 +90,16 @@ class AIService {
     // 從環境變量獲取 AI 提供者
     this.provider = (process.env.AI_PROVIDER as AIProvider) || AIProvider.GOOGLE;
     
+    // 設置是否自動選擇模型
+    this.shouldAutoSelectModel = process.env.AUTO_SELECT_MODEL === 'true';
+    
     // 設置模型名稱
     this.openAIModel = process.env.OPENAI_MODEL || 'gpt-4';
     this.googleModel = process.env.GOOGLE_MODEL || 'gemini-pro';
     this.claudeModel = process.env.CLAUDE_MODEL || 'claude-3-opus-20240229';
     this.llamaModel = process.env.LLAMA_MODEL || 'llama-3-70b-instruct';
     
-    logger.info(`AI 服務初始化，使用提供者: ${this.provider}`);
+    logger.info(`AI 服務初始化，使用提供者: ${this.provider}，自動選擇模型: ${this.shouldAutoSelectModel}`);
   }
   
   /**
@@ -135,6 +139,61 @@ class AIService {
       logger.error('初始化 AI 模型錯誤:', error);
       throw error;
     }
+  }
+  
+  /**
+   * 根據查詢和知識項目選擇最合適的 AI 模型
+   * @param query 查詢
+   * @param knowledgeItems 知識項目
+   * @returns 選擇的 AI 提供者
+   */
+  private selectBestModel(query: string, knowledgeItems: KnowledgeItemWithRelevance[]): AIProvider {
+    // 計算查詢的複雜性分數
+    const queryComplexity = this.calculateQueryComplexity(query);
+    
+    // 計算知識項目的數量和平均相關性
+    const knowledgeCount = knowledgeItems.length;
+    const avgRelevance = knowledgeItems.length > 0
+      ? knowledgeItems.reduce((sum, item) => sum + item.relevance, 0) / knowledgeItems.length
+      : 0;
+    
+    // 根據複雜性和知識項目選擇模型
+    if (queryComplexity > 0.8 || (knowledgeCount > 3 && avgRelevance < 0.5)) {
+      // 高複雜性查詢或大量低相關性知識項目，使用最強大的模型
+      return AIProvider.CLAUDE;
+    } else if (queryComplexity > 0.5 || knowledgeCount > 5) {
+      // 中等複雜性查詢或較多知識項目，使用較強大的模型
+      return AIProvider.OPENAI;
+    } else if (queryComplexity > 0.3 || (knowledgeCount > 0 && avgRelevance > 0.7)) {
+      // 低複雜性查詢或少量高相關性知識項目，使用中等模型
+      return AIProvider.GOOGLE;
+    } else {
+      // 簡單查詢或無知識項目，使用最基本的模型
+      return AIProvider.LLAMA;
+    }
+  }
+  
+  /**
+   * 計算查詢的複雜性分數
+   * @param query 查詢
+   * @returns 複雜性分數 (0-1)
+   */
+  private calculateQueryComplexity(query: string): number {
+    // 計算查詢長度的複雜性
+    const lengthComplexity = Math.min(query.length / 200, 0.5);
+    
+    // 計算查詢中特殊字符和數字的複雜性
+    const specialCharsCount = (query.match(/[^\w\s]/g) || []).length;
+    const specialCharsComplexity = Math.min(specialCharsCount / 10, 0.2);
+    
+    // 計算查詢中句子數量的複雜性
+    const sentenceCount = (query.match(/[.!?。！？]/g) || []).length + 1;
+    const sentenceComplexity = Math.min(sentenceCount / 5, 0.3);
+    
+    // 計算總複雜性分數
+    const totalComplexity = lengthComplexity + specialCharsComplexity + sentenceComplexity;
+    
+    return Math.min(totalComplexity, 1);
   }
   
   /**
@@ -178,16 +237,23 @@ class AIService {
       // 初始化 AI 模型
       await this.initAIModel();
       
+      // 選擇最佳模型或使用預設模型
+      const selectedProvider = this.shouldAutoSelectModel
+        ? this.selectBestModel(query, knowledgeItems)
+        : this.provider;
+      
+      logger.info(`使用 AI 提供者: ${selectedProvider}${this.shouldAutoSelectModel ? ' (自動選擇)' : ''}`);
+      
       // 根據提供者生成回覆
       let reply: AIReplyResult;
       
-      if (this.provider === AIProvider.GOOGLE && this.vertexAI) {
+      if (selectedProvider === AIProvider.GOOGLE && this.vertexAI) {
         reply = await this.generateReplyWithGoogle(query, history, knowledgeItems, temperature, maxTokens);
-      } else if (this.provider === AIProvider.OPENAI) {
+      } else if (selectedProvider === AIProvider.OPENAI) {
         reply = await this.generateReplyWithOpenAI(query, history, knowledgeItems, temperature, maxTokens);
-      } else if (this.provider === AIProvider.CLAUDE) {
+      } else if (selectedProvider === AIProvider.CLAUDE) {
         reply = await this.generateReplyWithClaude(query, history, knowledgeItems, temperature, maxTokens);
-      } else if (this.provider === AIProvider.LLAMA) {
+      } else if (selectedProvider === AIProvider.LLAMA) {
         reply = await this.generateReplyWithLlama(query, history, knowledgeItems, temperature, maxTokens);
       } else {
         throw new Error('AI 模型未初始化');
