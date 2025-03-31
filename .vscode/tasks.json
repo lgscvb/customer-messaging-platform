@@ -2,9 +2,9 @@
   "version": "2.0.0",
   "tasks": [
     {
-      "label": "全專案代碼修復",
+      "label": "ESLint Fix All",
       "type": "shell",
-      "command": "npx eslint --fix .",
+      "command": "npx eslint --fix 'src/**/*.{ts,tsx}'",
       "problemMatcher": ["$eslint-stylish"]
     }
   ]
