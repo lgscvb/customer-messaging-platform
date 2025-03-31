@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Button, 
@@ -25,7 +25,7 @@ interface LanguageOption {
  */
 const LanguageSwitcher: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const [anchorEl, setAnchorEl] = useState<null | HTMLElement>(null);
+  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
   const open = Boolean(anchorEl);
 
   // 支持的語言列表
