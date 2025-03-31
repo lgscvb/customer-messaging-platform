@@ -31,7 +31,7 @@ const logger = winston.createLogger({
 });
 
 // 連接到 MongoDB
-mongoose.connect(\`mongodb://\${process.env.DB_HOST}:\${process.env.DB_PORT}/\${process.env.DB_NAME}\`, {
+mongoose.connect(`mongodb://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
   user: process.env.DB_USER,
@@ -47,7 +47,7 @@ mongoose.connect(\`mongodb://\${process.env.DB_HOST}:\${process.env.DB_PORT}/\${
 
 // 連接到 Redis
 const redisClient = redis.createClient({
-  url: \`redis://\${process.env.REDIS_HOST}:\${process.env.REDIS_PORT}\`,
+  url: `redis://${process.env.REDIS_HOST}:${process.env.REDIS_PORT}`,
   password: process.env.REDIS_PASSWORD
 });
 
@@ -154,7 +154,7 @@ app.post('/api/auth/login', async (req, res) => {
     );
 
     // 將 token 存儲在 Redis 中
-    await redisClient.set(\`auth_\${user._id}\`, token, {
+    await redisClient.set(`auth_${user._id}`, token, {
       EX: 60 * 60 * 8 // 8 小時
     });
 
@@ -182,7 +182,7 @@ app.post('/api/auth/logout', async (req, res) => {
     const { userId } = req.body;
 
     // 從 Redis 中刪除 token
-    await redisClient.del(\`auth_\${userId}\`);
+    await redisClient.del(`auth_${userId}`);
 
     res.status(StatusCodes.OK).json({
       status: 'success',
@@ -211,7 +211,7 @@ app.get('/api/auth/verify', async (req, res) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     // 檢查 token 是否在 Redis 中
-    const storedToken = await redisClient.get(\`auth_\${decoded.id}\`);
+    const storedToken = await redisClient.get(`auth_${decoded.id}`);
     if (!storedToken || storedToken !== token) {
       return res.status(StatusCodes.UNAUTHORIZED).json({
         status: 'error',
@@ -238,7 +238,7 @@ app.get('/api/auth/verify', async (req, res) => {
 
 // 錯誤處理中間件
 app.use((err, req, res, next) => {
-  logger.error(\`\${err.name}: \${err.message}\`, { stack: err.stack });
+  logger.error(`${err.name}: ${err.message}`, { stack: err.stack });
   res.status(err.status || StatusCodes.INTERNAL_SERVER_ERROR).json({
     status: 'error',
     message: err.message || '服務器內部錯誤'
@@ -247,7 +247,7 @@ app.use((err, req, res, next) => {
 
 // 啟動服務器
 app.listen(PORT, () => {
-  logger.info(\`Auth Service 運行在端口 \${PORT}\`);
+  logger.info(`Auth Service 運行在端口 ${PORT}`);
 });
 
 // 處理未捕獲的異常
