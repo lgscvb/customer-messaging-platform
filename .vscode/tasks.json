@@ -1,0 +1,11 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "全專案代碼修復",
+      "type": "shell",
+      "command": "npx eslint --fix .",
+      "problemMatcher": ["$eslint-stylish"]
+    }
+  ]
+}
