@@ -352,9 +352,25 @@
 
 我們最近修復了 i18n 國際化問題，確保所有頁面正確顯示繁體中文，提升了用戶體驗。我們還優化了響應式設計，確保在不同設備上的良好體驗，並實現了深色模式支援，讓用戶可以根據自己的偏好選擇亮色或暗色主題。我們也改進了表單驗證和錯誤提示，提供了更好的用戶反饋和指導。
 
-### 最新更新 (2025/3/31)
+### 最新更新 (2025/3/31 下午4:48)
 
 我們今天完成了以下工作：
+
+6. **為 API 配置系統編寫單元測試**：
+   - 為 ApiConfigService 編寫了全面的單元測試，覆蓋所有方法
+   - 測試了 getAllApiConfigs、getAllActiveApiConfigs、getApiConfigById 等基本功能
+   - 測試了 getApiConfigByKey、getApiConfigsByType 等查詢功能
+   - 測試了 createApiConfig、updateApiConfig、deleteApiConfig 等管理功能
+   - 測試了 getApiConfigValue、setApiConfigValue 等值操作功能
+   - 測試了 getAiApiKey、getPlatformApiKey、getIntegrationApiKey 等特定功能
+   - 確保了所有方法的錯誤處理邏輯正確
+   - 為 ApiConfigController 編寫了全面的單元測試，覆蓋所有 API 端點
+   - 測試了 getAllApiConfigs、getApiConfigById、createApiConfig 等基本功能
+   - 測試了 getApiConfigByKey、getApiConfigsByType 等查詢功能
+   - 測試了 updateApiConfig、deleteApiConfig 等管理功能
+   - 測試了 getApiConfigValue、setApiConfigValue 等值操作功能
+   - 測試了各種錯誤情況的處理邏輯
+   - 確保了控制器層與服務層的正確交互
 
 1. **優化加載狀態和過渡動畫**：
    - 在 MessageList.tsx 組件中添加了骨架屏加載效果，替代簡單的旋轉圓圈
