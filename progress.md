@@ -1,5 +1,15 @@
 # 全通路客戶訊息管理平台 - 開發進度報告
 
+## 最新工作 (2025/4/1 下午7:11)
+
+我們今天修復了 Material UI 圖標導入問題：
+
+1. **修復 Material UI 圖標導入問題**
+   - 在 ConversationView.tsx 中修改了不存在的圖標導入
+   - 將 `Emoji` 圖標替換為 `SentimentSatisfied` 圖標
+   - 這個修改解決了 "模組 '@mui/icons-material' 沒有匯出的成員 'Emoji'" 錯誤
+   - 使用 Material UI 中可用的圖標，確保代碼能夠正確編譯和運行
+
 ## 最新工作 (2025/4/1 下午7:10)
 
 我們今天修復了 React Hooks 和 Material UI 圖標導入問題：
