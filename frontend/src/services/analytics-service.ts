@@ -1,6 +1,14 @@
-import api from './api';
 import analyticsService from './analyticsService';
 import { TimeRange } from '../types/analytics';
+
+/**
+ * 分析過濾器介面
+ */
+export interface AnalyticsFilter {
+  timeRange: {
+    range: string;
+  };
+}
 
 /**
  * 分析服務
@@ -12,7 +20,7 @@ class AnalyticsService {
    * @param filter 過濾條件
    * @returns 訊息統計數據
    */
-  async getMessageStats(filter: any) {
+  async getMessageStats(filter: AnalyticsFilter) {
     try {
       // 將儀表板過濾器轉換為分析服務時間範圍
       const timeRange = this.convertTimeRange(filter.timeRange.range);
@@ -44,7 +52,7 @@ class AnalyticsService {
    * @param filter 過濾條件
    * @returns 客戶統計數據
    */
-  async getCustomerStats(filter: any) {
+  async getCustomerStats(filter: AnalyticsFilter) {
     try {
       // 將儀表板過濾器轉換為分析服務時間範圍
       const timeRange = this.convertTimeRange(filter.timeRange.range);
@@ -76,7 +84,7 @@ class AnalyticsService {
    * @param filter 過濾條件
    * @returns AI 統計數據
    */
-  async getAIStats(filter: any) {
+  async getAIStats(filter: AnalyticsFilter) {
     try {
       // 將儀表板過濾器轉換為分析服務時間範圍
       const timeRange = this.convertTimeRange(filter.timeRange.range);
@@ -116,7 +124,7 @@ class AnalyticsService {
    * @param filter 過濾條件
    * @returns 銷售統計數據
    */
-  async getSalesStats(filter: any) {
+  async getSalesStats(filter: AnalyticsFilter) {
     try {
       // 將儀表板過濾器轉換為分析服務時間範圍
       const timeRange = this.convertTimeRange(filter.timeRange.range);
