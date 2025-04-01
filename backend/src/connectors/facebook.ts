@@ -223,6 +223,12 @@ class FacebookConnector {
     try {
       const message = messaging.message;
       
+      // 確保 message 存在
+      if (!message) {
+        logger.warn(`收到沒有消息內容的 Facebook 事件: ${JSON.stringify(messaging)}`);
+        return;
+      }
+      
       // 處理文本消息
       if (message.text) {
         await this.handleTextMessage(customer, message.text, messaging.sender.id);
@@ -343,6 +349,12 @@ class FacebookConnector {
   private async handlePostback(customer: Customer, messaging: FacebookMessaging): Promise<void> {
     try {
       const postback = messaging.postback;
+      
+      // 確保 postback 存在
+      if (!postback) {
+        logger.warn(`收到沒有回調內容的 Facebook 事件: ${JSON.stringify(messaging)}`);
+        return;
+      }
       
       // 創建回覆消息
       const response = `收到您的回調: ${postback.payload}`;
@@ -506,6 +518,7 @@ class FacebookConnector {
         customerId: customer.id,
         platformId: userId,
         platformType: PlatformType.FACEBOOK,
+        platformCustomerId: userId, // 添加 platformCustomerId 屬性
         platformData: {
           profile,
         },
@@ -553,16 +566,19 @@ class FacebookConnector {
    * @param message Facebook 消息
    * @param direction 消息方向
    */
-  private async saveMessage(customerId: string, message: FacebookMessage | FacebookPostback, direction: MessageDirection): Promise<void> {
+  private async saveMessage(customerId: string, message: FacebookMessage | FacebookPostback | { text: string } | { template: any }, direction: MessageDirection): Promise<void> {
     try {
       // 確定消息類型
       let messageType = MessageType.OTHER;
       let content = null;
       
-      if (message.text) {
+      // 處理 FacebookMessage 類型
+      if ('text' in message && message.text) {
         messageType = MessageType.TEXT;
         content = message.text;
-      } else if (message.attachments && message.attachments.length > 0) {
+      }
+      // 處理 FacebookMessage 中的附件
+      else if ('attachments' in message && message.attachments && message.attachments.length > 0) {
         const attachment = message.attachments[0];
         switch (attachment.type) {
           case 'image':
@@ -581,7 +597,14 @@ class FacebookConnector {
             messageType = MessageType.OTHER;
             break;
         }
-      } else if (message.template) {
+      }
+      // 處理 FacebookPostback 類型
+      else if ('payload' in message && 'title' in message) {
+        messageType = MessageType.TEXT;
+        content = message.payload;
+      }
+      // 處理模板消息
+      else if ('template' in message) {
         messageType = MessageType.TEMPLATE;
       }
       
