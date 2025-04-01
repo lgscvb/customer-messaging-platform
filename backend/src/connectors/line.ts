@@ -7,6 +7,87 @@ import { PlatformType, MessageDirection, MessageType } from '../types/platform';
 import logger from '../utils/logger';
 
 /**
+ * LINE 事件類型
+ */
+export type LineEventType =
+  | 'message'
+  | 'follow'
+  | 'unfollow'
+  | 'join'
+  | 'leave'
+  | 'postback'
+  | 'beacon'
+  | 'accountLink'
+  | 'memberJoined'
+  | 'memberLeft';
+
+/**
+ * LINE 消息事件
+ */
+export interface LineMessageEvent {
+  type: 'message';
+  replyToken: string;
+  source: {
+    userId: string;
+    type: string;
+    groupId?: string;
+    roomId?: string;
+  };
+  message: {
+    id: string;
+    type: string;
+    text?: string;
+    contentProvider?: {
+      type: string;
+      originalContentUrl?: string;
+    };
+    [key: string]: any;
+  };
+  timestamp: number;
+  mode: string;
+}
+
+/**
+ * LINE 關注事件
+ */
+export interface LineFollowEvent {
+  type: 'follow';
+  replyToken: string;
+  source: {
+    userId: string;
+    type: string;
+  };
+  timestamp: number;
+  mode: string;
+}
+
+/**
+ * LINE 加入群組事件
+ */
+export interface LineJoinEvent {
+  type: 'join';
+  replyToken: string;
+  source: {
+    type: string;
+    groupId: string;
+  };
+  timestamp: number;
+  mode: string;
+}
+
+/**
+ * LINE 用戶資料
+ */
+export interface LineUserProfile {
+  userId: string;
+  displayName: string;
+  pictureUrl?: string;
+  statusMessage?: string;
+  language?: string;
+  [key: string]: any;
+}
+
+/**
  * LINE 平台配置
  */
 export interface LineConfig {
@@ -43,14 +124,13 @@ class LineConnector {
    */
   constructor(config: LineConfig) {
     this.config = config;
-    
-    const clientConfig: any = {
+    const clientConfig: ClientConfig = {
       channelAccessToken: config.channelAccessToken,
       channelSecret: config.channelSecret,
     };
     
     if (config.apiEndpoint) {
-      clientConfig.apiEndpoint = config.apiEndpoint;
+      (clientConfig as any).apiEndpoint = config.apiEndpoint;
     }
     
     this.client = new Client(clientConfig);
@@ -79,7 +159,7 @@ class LineConnector {
     try {
       // 處理消息事件
       if (event.type === 'message') {
-        const { replyToken, source, message } = event as any;
+        const { replyToken, source, message } = event as LineMessageEvent;
         
         // 獲取或創建客戶
         const customer = await this.getOrCreateCustomer(source.userId as string);
@@ -87,7 +167,7 @@ class LineConnector {
         // 處理不同類型的消息
         switch (message.type) {
           case LineMessageType.TEXT:
-            await this.handleTextMessage(replyToken, customer, message.text);
+            await this.handleTextMessage(replyToken, customer, message.text || '');
             break;
           case LineMessageType.IMAGE:
             await this.handleImageMessage(replyToken, customer);
@@ -114,7 +194,7 @@ class LineConnector {
       }
       // 處理關注事件
       else if (event.type === 'follow') {
-        await this.handleFollowEvent(event as any);
+        await this.handleFollowEvent(event as LineFollowEvent);
       }
       // 處理取消關注事件
       else if (event.type === 'unfollow') {
@@ -122,7 +202,7 @@ class LineConnector {
       }
       // 處理加入群組事件
       else if (event.type === 'join') {
-        await this.handleJoinEvent(event as any);
+        await this.handleJoinEvent(event as LineJoinEvent);
       }
       // 處理離開群組事件
       else if (event.type === 'leave') {
@@ -304,7 +384,7 @@ class LineConnector {
    * 處理關注事件
    * @param event 關注事件
    */
-  private async handleFollowEvent(event: any): Promise<void> {
+  private async handleFollowEvent(event: LineFollowEvent): Promise<void> {
     try {
       const { replyToken, source } = event;
       
@@ -349,7 +429,7 @@ class LineConnector {
    * 處理加入群組事件
    * @param event 加入群組事件
    */
-  private async handleJoinEvent(event: any): Promise<void> {
+  private async handleJoinEvent(event: LineJoinEvent): Promise<void> {
     try {
       const { replyToken, source } = event;
       
@@ -376,8 +456,7 @@ class LineConnector {
   private async handleLeaveEvent(event: WebhookEvent): Promise<void> {
     try {
       const { source } = event;
-      
-      logger.info(`已處理離開群組事件: ${source.type === 'group' ? (source as any).groupId : 'unknown'}`);
+      logger.info(`已處理離開群組事件: ${source.type === 'group' ? (source as { groupId: string }).groupId : 'unknown'}`);
     } catch (error) {
       logger.error('處理離開群組事件錯誤:', error);
       throw error;
@@ -413,7 +492,7 @@ class LineConnector {
    * 獲取用戶資料
    * @param userId 用戶 ID
    */
-  async getUserProfile(userId: string): Promise<any> {
+  async getUserProfile(userId: string): Promise<LineUserProfile> {
     try {
       // 獲取用戶資料
       const profile = await this.client.getProfile(userId);
@@ -468,6 +547,7 @@ class LineConnector {
         customerId: customer.id,
         platformId: userId,
         platformType: PlatformType.LINE,
+        platformCustomerId: userId,
         platformData: {
           profile,
         },
@@ -517,7 +597,7 @@ class LineConnector {
    * @param customerId 客戶 ID
    * @param message LINE 消息
    */
-  private async saveMessage(customerId: string, message: any): Promise<void> {
+  private async saveMessage(customerId: string, message: LineMessageEvent['message']): Promise<void> {
     try {
       // 創建消息
       await Message.create({

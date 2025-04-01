@@ -5,6 +5,57 @@ import { PlatformType, MessageDirection, MessageType } from '../types/platform';
 import logger from '../utils/logger';
 
 /**
+ * 網站 Webhook 事件負載介面
+ */
+export interface WebsiteWebhookPayload {
+  apiKey: string;
+  event: WebsiteEventType;
+  userId: string;
+  userInfo?: WebsiteUserInfo;
+  message?: WebsiteMessage;
+  page?: WebsitePage;
+  timestamp: number;
+}
+
+/**
+ * 網站事件類型
+ */
+export type WebsiteEventType = 'message' | 'user_info' | 'page_view';
+
+/**
+ * 網站用戶信息介面
+ */
+export interface WebsiteUserInfo {
+  name?: string;
+  email?: string;
+  phone?: string;
+  avatar?: string;
+  [key: string]: any;
+}
+
+/**
+ * 網站消息介面
+ */
+export interface WebsiteMessage {
+  type: WebsiteMessageType;
+  content?: string;
+  url?: string;
+  fileName?: string;
+  timestamp: number;
+  [key: string]: any;
+}
+
+/**
+ * 網站頁面介面
+ */
+export interface WebsitePage {
+  url: string;
+  title: string;
+  referrer?: string;
+  [key: string]: any;
+}
+
+/**
  * 網站平台配置
  */
 export interface WebsiteConfig {
@@ -40,7 +91,7 @@ class WebsiteConnector {
    * 處理網站 Webhook 事件
    * @param payload Webhook 事件負載
    */
-  async handleWebhook(payload: any): Promise<void> {
+  async handleWebhook(payload: WebsiteWebhookPayload): Promise<void> {
     try {
       // 驗證 Webhook 請求
       if (!this.verifyWebhookSignature(payload)) {
@@ -73,7 +124,7 @@ class WebsiteConnector {
    * 驗證 Webhook 簽名
    * @param payload Webhook 事件負載
    */
-  private verifyWebhookSignature(payload: any): boolean {
+  private verifyWebhookSignature(payload: WebsiteWebhookPayload): boolean {
     // 實際實現中，應該使用加密庫來驗證簽名
     // 這裡簡化為檢查 API 密鑰
     return payload.apiKey === this.config.apiKey;
@@ -83,31 +134,36 @@ class WebsiteConnector {
    * 處理消息事件
    * @param payload 事件負載
    */
-  private async handleMessageEvent(payload: any): Promise<void> {
+  private async handleMessageEvent(payload: WebsiteWebhookPayload): Promise<void> {
     try {
       const { userId, message } = payload;
       
       // 獲取或創建客戶
       const customer = await this.getOrCreateCustomer(userId, payload.userInfo);
       
-      // 處理不同類型的消息
-      switch (message.type) {
-        case WebsiteMessageType.TEXT:
-          await this.handleTextMessage(customer, message.content, userId);
-          break;
-        case WebsiteMessageType.IMAGE:
-          await this.handleImageMessage(customer, message.url, userId);
-          break;
-        case WebsiteMessageType.FILE:
-          await this.handleFileMessage(customer, message.url, message.fileName, userId);
-          break;
-        default:
-          logger.info(`未處理的網站消息類型: ${message.type}`);
-          break;
+      // 確保消息存在
+      if (message) {
+        // 處理不同類型的消息
+        switch (message.type) {
+          case WebsiteMessageType.TEXT:
+            await this.handleTextMessage(customer, message.content || '', userId);
+            break;
+          case WebsiteMessageType.IMAGE:
+            await this.handleImageMessage(customer, message.url || '', userId);
+            break;
+          case WebsiteMessageType.FILE:
+            await this.handleFileMessage(customer, message.url || '', message.fileName || '', userId);
+            break;
+          default:
+            logger.info(`未處理的網站消息類型: ${message.type}`);
+            break;
+        }
+        
+        // 保存消息到數據庫
+        await this.saveMessage(customer.id, message, MessageDirection.INBOUND);
+      } else {
+        logger.warn(`收到沒有消息內容的消息事件: ${userId}`);
       }
-      
-      // 保存消息到數據庫
-      await this.saveMessage(customer.id, message, MessageDirection.INBOUND);
     } catch (error) {
       logger.error('處理消息事件錯誤:', error);
       throw error;
@@ -118,7 +174,7 @@ class WebsiteConnector {
    * 處理用戶信息事件
    * @param payload 事件負載
    */
-  private async handleUserInfoEvent(payload: any): Promise<void> {
+  private async handleUserInfoEvent(payload: WebsiteWebhookPayload): Promise<void> {
     try {
       const { userId, userInfo } = payload;
       
@@ -136,14 +192,14 @@ class WebsiteConnector {
    * 處理頁面瀏覽事件
    * @param payload 事件負載
    */
-  private async handlePageViewEvent(payload: any): Promise<void> {
+  private async handlePageViewEvent(payload: WebsiteWebhookPayload): Promise<void> {
     try {
       const { userId, page } = payload;
       
       // 獲取客戶
       const customer = await this.getCustomerByPlatformId(userId);
       
-      if (customer) {
+      if (customer && page) {
         // 更新客戶元數據
         const metadata = customer.metadata || {};
         const pageViews = metadata.pageViews || [];
@@ -167,6 +223,8 @@ class WebsiteConnector {
         );
         
         logger.info(`已處理客戶 ${customer.id} 的頁面瀏覽事件: ${page.url}`);
+      } else if (!page) {
+        logger.warn(`收到沒有頁面內容的頁面瀏覽事件: ${userId}`);
       }
     } catch (error) {
       logger.error('處理頁面瀏覽事件錯誤:', error);
@@ -243,7 +301,7 @@ class WebsiteConnector {
    * @param recipientId 接收者 ID
    * @param text 文本內容
    */
-  async sendTextMessage(recipientId: string, text: string): Promise<any> {
+  async sendTextMessage(recipientId: string, text: string): Promise<{ success: boolean }> {
     try {
       // 在實際實現中，這裡應該調用網站的 API 發送消息
       // 這裡模擬發送成功
@@ -251,7 +309,15 @@ class WebsiteConnector {
       // 保存消息到數據庫
       const customer = await this.getCustomerByPlatformId(recipientId);
       if (customer) {
-        await this.saveMessage(customer.id, { type: WebsiteMessageType.TEXT, content: text }, MessageDirection.OUTBOUND);
+        await this.saveMessage(
+          customer.id,
+          {
+            type: WebsiteMessageType.TEXT,
+            content: text,
+            timestamp: Date.now()
+          },
+          MessageDirection.OUTBOUND
+        );
       }
       
       logger.info(`已發送消息給客戶 ${recipientId}`);
@@ -268,7 +334,7 @@ class WebsiteConnector {
    * @param recipientId 接收者 ID
    * @param imageUrl 圖片 URL
    */
-  async sendImageMessage(recipientId: string, imageUrl: string): Promise<any> {
+  async sendImageMessage(recipientId: string, imageUrl: string): Promise<{ success: boolean }> {
     try {
       // 在實際實現中，這裡應該調用網站的 API 發送消息
       // 這裡模擬發送成功
@@ -276,7 +342,15 @@ class WebsiteConnector {
       // 保存消息到數據庫
       const customer = await this.getCustomerByPlatformId(recipientId);
       if (customer) {
-        await this.saveMessage(customer.id, { type: WebsiteMessageType.IMAGE, url: imageUrl }, MessageDirection.OUTBOUND);
+        await this.saveMessage(
+          customer.id,
+          {
+            type: WebsiteMessageType.IMAGE,
+            url: imageUrl,
+            timestamp: Date.now()
+          },
+          MessageDirection.OUTBOUND
+        );
       }
       
       logger.info(`已發送圖片消息給客戶 ${recipientId}`);
@@ -293,7 +367,7 @@ class WebsiteConnector {
    * @param userId 網站用戶 ID
    * @param userInfo 用戶信息
    */
-  private async getOrCreateCustomer(userId: string, userInfo?: any): Promise<Customer> {
+  private async getOrCreateCustomer(userId: string, userInfo?: WebsiteUserInfo): Promise<Customer> {
     try {
       // 查詢客戶平台
       const customerPlatform = await CustomerPlatform.findOne({
@@ -336,7 +410,7 @@ class WebsiteConnector {
         customerId: customer.id,
         platformId: userId,
         platformType: PlatformType.WEBSITE,
-        platformCustomerId: userId, // 添加必要的 platformCustomerId 欄位
+        platformCustomerId: userId,
         platformData: {
           userInfo: userInfo || {},
         },
@@ -356,9 +430,9 @@ class WebsiteConnector {
    * @param customer 客戶
    * @param userInfo 用戶信息
    */
-  private async updateCustomerInfo(customer: Customer, userInfo: any): Promise<void> {
+  private async updateCustomerInfo(customer: Customer, userInfo: WebsiteUserInfo): Promise<void> {
     try {
-      const updates: any = {};
+      const updates: Partial<Customer> = {};
       
       // 更新名稱
       if (userInfo.name && userInfo.name !== customer.name) {
@@ -425,7 +499,7 @@ class WebsiteConnector {
    * @param message 網站消息
    * @param direction 消息方向
    */
-  private async saveMessage(customerId: string, message: any, direction: MessageDirection): Promise<void> {
+  private async saveMessage(customerId: string, message: WebsiteMessage, direction: MessageDirection): Promise<void> {
     try {
       // 確定消息類型
       let messageType = MessageType.OTHER;

@@ -6,6 +6,104 @@ import { PlatformType, MessageDirection, MessageType } from '../types/platform';
 import logger from '../utils/logger';
 
 /**
+ * Facebook Webhook 事件負載介面
+ */
+export interface FacebookWebhookPayload {
+  object: string;
+  entry: FacebookEntry[];
+}
+
+/**
+ * Facebook 事件條目介面
+ */
+export interface FacebookEntry {
+  id: string;
+  time: number;
+  messaging?: FacebookMessaging[];
+}
+
+/**
+ * Facebook 消息事件介面
+ */
+export interface FacebookMessaging {
+  sender: {
+    id: string;
+  };
+  recipient: {
+    id: string;
+  };
+  timestamp: number;
+  message?: FacebookMessage;
+  postback?: FacebookPostback;
+}
+
+/**
+ * Facebook 消息介面
+ */
+export interface FacebookMessage {
+  mid: string;
+  text?: string;
+  attachments?: FacebookAttachment[];
+  quick_reply?: FacebookQuickReply;
+}
+
+/**
+ * Facebook 附件介面
+ */
+export interface FacebookAttachment {
+  type: string;
+  payload: {
+    url?: string;
+    title?: string;
+    coordinates?: {
+      lat: number;
+      long: number;
+    };
+    [key: string]: any;
+  };
+}
+
+/**
+ * Facebook 快速回覆介面
+ */
+export interface FacebookQuickReply {
+  payload: string;
+  [key: string]: any;
+}
+
+/**
+ * Facebook 回調介面
+ */
+export interface FacebookPostback {
+  title: string;
+  payload: string;
+  mid?: string;
+}
+
+/**
+ * Facebook 用戶資料介面
+ */
+export interface FacebookUserProfile {
+  id: string;
+  first_name: string;
+  last_name: string;
+  profile_pic?: string;
+  locale?: string;
+  timezone?: number;
+  gender?: string;
+  [key: string]: any;
+}
+
+/**
+ * Facebook API 回應介面
+ */
+export interface FacebookApiResponse {
+  recipient_id: string;
+  message_id: string;
+  [key: string]: any;
+}
+
+/**
  * Facebook 平台配置
  */
 export interface FacebookConfig {
@@ -50,7 +148,7 @@ class FacebookConnector {
    * 處理 Facebook Webhook 事件
    * @param payload Webhook 事件負載
    */
-  async handleWebhook(payload: any): Promise<void> {
+  async handleWebhook(payload: FacebookWebhookPayload): Promise<void> {
     try {
       // 檢查是否為頁面事件
       if (payload.object !== 'page') {
@@ -91,7 +189,7 @@ class FacebookConnector {
    * 處理單個消息
    * @param messaging 消息事件
    */
-  private async processMessage(messaging: any): Promise<void> {
+  private async processMessage(messaging: FacebookMessaging): Promise<void> {
     try {
       const senderId = messaging.sender.id;
       
@@ -121,7 +219,7 @@ class FacebookConnector {
    * @param customer 客戶
    * @param messaging 消息事件
    */
-  private async handleIncomingMessage(customer: Customer, messaging: any): Promise<void> {
+  private async handleIncomingMessage(customer: Customer, messaging: FacebookMessaging): Promise<void> {
     try {
       const message = messaging.message;
       
@@ -177,7 +275,7 @@ class FacebookConnector {
    * @param attachments 附件
    * @param recipientId 接收者 ID
    */
-  private async handleAttachmentMessage(customer: Customer, attachments: any[], recipientId: string): Promise<void> {
+  private async handleAttachmentMessage(customer: Customer, attachments: FacebookAttachment[], recipientId: string): Promise<void> {
     try {
       // 獲取第一個附件的類型
       const attachmentType = attachments[0].type;
@@ -222,7 +320,7 @@ class FacebookConnector {
    * @param quickReply 快速回覆
    * @param recipientId 接收者 ID
    */
-  private async handleQuickReply(customer: Customer, quickReply: any, recipientId: string): Promise<void> {
+  private async handleQuickReply(customer: Customer, quickReply: FacebookQuickReply, recipientId: string): Promise<void> {
     try {
       // 創建回覆消息
       const response = `收到您的快速回覆: ${quickReply.payload}`;
@@ -242,7 +340,7 @@ class FacebookConnector {
    * @param customer 客戶
    * @param messaging 消息事件
    */
-  private async handlePostback(customer: Customer, messaging: any): Promise<void> {
+  private async handlePostback(customer: Customer, messaging: FacebookMessaging): Promise<void> {
     try {
       const postback = messaging.postback;
       
@@ -267,7 +365,7 @@ class FacebookConnector {
    * @param recipientId 接收者 ID
    * @param text 文本內容
    */
-  async sendTextMessage(recipientId: string, text: string): Promise<any> {
+  async sendTextMessage(recipientId: string, text: string): Promise<FacebookApiResponse> {
     try {
       const url = `${this.apiUrl}/me/messages`;
       
@@ -306,7 +404,7 @@ class FacebookConnector {
    * @param recipientId 接收者 ID
    * @param template 模板
    */
-  async sendTemplateMessage(recipientId: string, template: any): Promise<any> {
+  async sendTemplateMessage(recipientId: string, template: Record<string, any>): Promise<FacebookApiResponse> {
     try {
       const url = `${this.apiUrl}/me/messages`;
       
@@ -347,7 +445,7 @@ class FacebookConnector {
    * 獲取用戶資料
    * @param userId 用戶 ID
    */
-  async getUserProfile(userId: string): Promise<any> {
+  async getUserProfile(userId: string): Promise<FacebookUserProfile> {
     try {
       const url = `${this.apiUrl}/${userId}`;
       
@@ -455,7 +553,7 @@ class FacebookConnector {
    * @param message Facebook 消息
    * @param direction 消息方向
    */
-  private async saveMessage(customerId: string, message: any, direction: MessageDirection): Promise<void> {
+  private async saveMessage(customerId: string, message: FacebookMessage | FacebookPostback, direction: MessageDirection): Promise<void> {
     try {
       // 確定消息類型
       let messageType = MessageType.OTHER;

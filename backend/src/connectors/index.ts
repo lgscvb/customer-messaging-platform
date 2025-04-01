@@ -7,11 +7,11 @@ import logger from '../utils/logger';
 /**
  * 平台配置接口
  */
-type PlatformConfig = 
+export type PlatformConfig =
   | { platformType: PlatformType.LINE; config: LineConfig }
   | { platformType: PlatformType.FACEBOOK; config: FacebookConfig }
   | { platformType: PlatformType.WEBSITE; config: WebsiteConfig }
-  | { platformType: PlatformType; config: Record<string, any> };
+  | { platformType: PlatformType; config: Record<string, unknown> };
 
 /**
  * 連接器類型
@@ -66,19 +66,31 @@ class ConnectorFactory {
    * @param platformType 平台類型
    * @param config 平台配置
    */
-  public createConnector(platformType: PlatformType, config: any): void {
+  public createConnector(platformType: PlatformType, config: unknown): void {
     try {
       let connector: Connector;
       
       switch (platformType) {
         case PlatformType.LINE:
-          connector = new LineConnector(config as LineConfig);
+          if (this.isLineConfig(config)) {
+            connector = new LineConnector(config);
+          } else {
+            throw new Error(`無效的 LINE 平台配置`);
+          }
           break;
         case PlatformType.FACEBOOK:
-          connector = new FacebookConnector(config as FacebookConfig);
+          if (this.isFacebookConfig(config)) {
+            connector = new FacebookConnector(config);
+          } else {
+            throw new Error(`無效的 Facebook 平台配置`);
+          }
           break;
         case PlatformType.WEBSITE:
-          connector = new WebsiteConnector(config as WebsiteConfig);
+          if (this.isWebsiteConfig(config)) {
+            connector = new WebsiteConnector(config);
+          } else {
+            throw new Error(`無效的網站平台配置`);
+          }
           break;
         default:
           throw new Error(`不支持的平台類型: ${platformType}`);
@@ -91,6 +103,49 @@ class ConnectorFactory {
       logger.error(`創建 ${platformType} 平台連接器錯誤:`, error);
       throw error;
     }
+  }
+  
+  /**
+   * 檢查是否為 LINE 平台配置
+   * @param config 配置
+   */
+  private isLineConfig(config: unknown): config is LineConfig {
+    if (!config || typeof config !== 'object') return false;
+    
+    const lineConfig = config as Partial<LineConfig>;
+    return (
+      typeof lineConfig.channelAccessToken === 'string' &&
+      typeof lineConfig.channelSecret === 'string'
+    );
+  }
+  
+  /**
+   * 檢查是否為 Facebook 平台配置
+   * @param config 配置
+   */
+  private isFacebookConfig(config: unknown): config is FacebookConfig {
+    if (!config || typeof config !== 'object') return false;
+    
+    const fbConfig = config as Partial<FacebookConfig>;
+    return (
+      typeof fbConfig.pageAccessToken === 'string' &&
+      typeof fbConfig.appSecret === 'string' &&
+      typeof fbConfig.verifyToken === 'string'
+    );
+  }
+  
+  /**
+   * 檢查是否為網站平台配置
+   * @param config 配置
+   */
+  private isWebsiteConfig(config: unknown): config is WebsiteConfig {
+    if (!config || typeof config !== 'object') return false;
+    
+    const websiteConfig = config as Partial<WebsiteConfig>;
+    return (
+      typeof websiteConfig.apiKey === 'string' &&
+      typeof websiteConfig.webhookSecret === 'string'
+    );
   }
   
   /**
