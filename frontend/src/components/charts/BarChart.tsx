@@ -1,5 +1,6 @@
-import React, { useRef, useEffect } from 'react';
-import { Box, useTheme, Typography, Paper, CircularProgress, Alert } from '@mui/material';
+import * as React from 'react';
+import { Box, Typography, Paper, CircularProgress, Alert } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
 import Chart from 'chart.js/auto';
 
 /**
@@ -27,7 +28,9 @@ interface BarChartProps {
   series: BarChartSeries[];
   height?: number;
   horizontal?: boolean;
-  showValues?: boolean;
+  // 移除 showValues 替換為更精確的參數名稱
+  showValues?: boolean; // @deprecated 使用 _showValues 替代
+  _showValues?: boolean; // 暫時未使用，保留給未來擴展功能
   loading?: boolean;
   error?: string;
   yAxisLabel?: string;
@@ -37,12 +40,13 @@ interface BarChartProps {
 /**
  * 柱狀圖組件
  */
-const BarChart: React.FC<BarChartProps> = ({ 
+const BarChart: React.FC<BarChartProps> = ({
   title,
-  series, 
+  series,
   height = 300,
-  horizontal = false, 
-  showValues = false,
+  horizontal = false,
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  _showValues = false, // 暫時未使用，但保留此參數以供未來使用
   loading = false,
   error,
   yAxisLabel,
@@ -193,7 +197,7 @@ const BarChart: React.FC<BarChartProps> = ({
   }, [series, horizontal, loading, error, theme, yAxisLabel, xAxisLabel]);
   
   // 獲取默認顏色
-  const getDefaultColor = (index: number, theme: any): string => {
+  const getDefaultColor = (index: number, theme: ReturnType<typeof useTheme>): string => {
     const colors = [
       theme.palette.primary.main,
       theme.palette.secondary.main,
