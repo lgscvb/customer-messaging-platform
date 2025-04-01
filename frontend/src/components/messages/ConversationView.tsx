@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Box, 
@@ -22,10 +22,10 @@ import {
   Send as SendIcon,
   AttachFile as AttachFileIcon,
   MoreVert as MoreVertIcon,
-  InsertEmoticon as EmojiIcon,
+  Emoji as EmojiIcon,
   CheckCircle as CheckCircleIcon,
   Close as CloseIcon,
-  AutoAwesome as AiIcon,
+  Star as AiIcon,
   Edit as EditIcon,
   ContentCopy as CopyIcon
 } from '@mui/icons-material';
@@ -73,7 +73,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   const { t } = useTranslation();
   const { user } = useAuth();
   const { addNotification } = useNotifications();
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesEndRef = React.useRef<HTMLDivElement>(null);
   
   // 狀態
   const [conversation, setConversation] = React.useState<(Message | Reply)[]>([]);
@@ -88,7 +88,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   /**
    * 獲取對話
    */
-  useEffect(() => {
+  React.useEffect(() => {
     if (!selectedMessage) return;
     
     const fetchConversation = async () => {
@@ -114,7 +114,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   /**
    * 獲取 AI 回覆建議
    */
-  useEffect(() => {
+  React.useEffect(() => {
     if (!selectedMessage) return;
     
     const fetchAiSuggestions = async () => {
@@ -136,7 +136,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   /**
    * 滾動到底部
    */
-  useEffect(() => {
+  React.useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [conversation]);
   
