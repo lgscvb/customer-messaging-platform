@@ -51,6 +51,17 @@
 | 模組導入問題     | 148  | 8    | 156  |
 | 其他語法錯誤     | 25   | 78   | 103  |
 
+## 今日最新工作 (2025/4/1 下午5:39)
+
+我們繼續修復前端 UI 組件中的 TypeScript 問題：
+
+1. **修復 BarChart.tsx 中的多個類型問題**
+   - 修改 React hooks 導入方式，避免使用解構導入
+   - 從 @mui/material/styles 中單獨導入 useTheme，提高引用精確度
+   - 使用 ReturnType<typeof useTheme> 替代 any 類型
+   - 處理未使用的 showValues 參數，添加 ESLint 禁用註解
+   - 更新介面定義，提高型別安全性
+
 ## 今日最新工作 (2025/4/1 下午5:36)
 
 我們繼續修復前端組件中的 TypeScript 類型問題：
