@@ -18,22 +18,16 @@ import {
   Chip,
   Badge
 } from '@mui/material';
-import { 
-  Send as SendIcon, 
+import {
+  Send as SendIcon,
   AttachFile as AttachFileIcon,
   MoreVert as MoreVertIcon,
   InsertEmoticon as EmojiIcon,
-  Image as ImageIcon,
-  Description as FileIcon,
-  LocationOn as LocationIcon,
-  Check as CheckIcon,
   CheckCircle as CheckCircleIcon,
   Close as CloseIcon,
   AutoAwesome as AiIcon,
   Edit as EditIcon,
-  ContentCopy as CopyIcon,
-  Save as SaveIcon,
-  Delete as DeleteIcon
+  ContentCopy as CopyIcon
 } from '@mui/icons-material';
 import { formatDistanceToNow, format } from 'date-fns';
 import { zhTW } from 'date-fns/locale';
@@ -87,7 +81,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   const [sending, setSending] = useState(false);
   const [replyText, setReplyText] = useState('');
   const [aiSuggestions, setAiSuggestions] = useState<AiReplySuggestion[]>([]);
-  const [loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
+  const [_loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
   const [selectedSuggestion, setSelectedSuggestion] = useState<AiReplySuggestion | null>(null);
   const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
   
@@ -115,7 +109,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({
     };
     
     fetchConversation();
-  }, [selectedMessage, addNotification, t]);
+  }, [selectedMessage, addNotification, t, setLoading, setConversation]);
   
   /**
    * 獲取 AI 回覆建議
@@ -137,7 +131,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({
     };
     
     fetchAiSuggestions();
-  }, [selectedMessage]);
+  }, [selectedMessage, setLoadingAiSuggestions, setAiSuggestions]);
   
   /**
    * 滾動到底部
@@ -279,7 +273,7 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   /**
    * 渲染消息
    */
-  const renderMessage = (item: Message | Reply, index: number) => {
+  const renderMessage = (item: Message | Reply, _index: number) => {
     const isReply = 'messageId' in item;
     const isCurrentUserReply = isReply && item.agentId === user?.id;
     

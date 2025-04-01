@@ -1,10 +1,21 @@
 # 全通路客戶訊息管理平台 - 開發進度報告
 
-## 最新工作 (2025/4/1 下午6:37)
+## 最新工作 (2025/4/1 下午6:38)
 
-我們今天修復了 ESLint 配置問題：
+我們今天修復了以下問題：
 
-1. **修復 ESLint 配置中的路徑問題**
+1. **修復 React Hooks 依賴數組問題**
+   - 在 ConversationView.tsx 中修復了 useEffect 的依賴數組問題
+   - 添加了 setLoading, setConversation, setLoadingAiSuggestions, setAiSuggestions 到依賴數組中
+   - 這些修改確保了 React Hooks 的正確使用，避免了潛在的 bug
+
+2. **修復 ESLint 未使用變量警告**
+   - 移除了未使用的 import（ImageIcon, FileIcon, LocationIcon, CheckIcon, SaveIcon, DeleteIcon）
+   - 將未使用的變量 loadingAiSuggestions 重命名為 _loadingAiSuggestions
+   - 將未使用的參數 index 重命名為 _index
+   - 這些修改消除了所有 ESLint 警告，提高了代碼質量
+
+3. **修復 ESLint 配置中的路徑問題**
    - 將相對路徑改為絕對路徑，確保 ESLint 能夠正確找到 tsconfig.json 文件
    - 前端配置：`/Users/daihaoting_1/Desktop/customer-messaging-platform/frontend/tsconfig.json`
    - 後端配置：`/Users/daihaoting_1/Desktop/customer-messaging-platform/backend/tsconfig.json`
