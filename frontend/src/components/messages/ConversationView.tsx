@@ -1,5 +1,4 @@
-import React from 'react';
-import { useState, useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { useTranslation } from 'react-i18next';
 import { 
   Box, 
@@ -77,14 +76,14 @@ const ConversationView: React.FC<ConversationViewProps> = ({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   
   // 狀態
-  const [conversation, setConversation] = useState<(Message | Reply)[]>([]);
-  const [loading, setLoading] = useState(false);
-  const [sending, setSending] = useState(false);
-  const [replyText, setReplyText] = useState('');
-  const [aiSuggestions, setAiSuggestions] = useState<AiReplySuggestion[]>([]);
-  const [_loadingAiSuggestions, setLoadingAiSuggestions] = useState(false);
-  const [selectedSuggestion, setSelectedSuggestion] = useState<AiReplySuggestion | null>(null);
-  const [menuAnchorEl, setMenuAnchorEl] = useState<null | HTMLElement>(null);
+  const [conversation, setConversation] = React.useState<(Message | Reply)[]>([]);
+  const [loading, setLoading] = React.useState(false);
+  const [sending, setSending] = React.useState(false);
+  const [replyText, setReplyText] = React.useState('');
+  const [aiSuggestions, setAiSuggestions] = React.useState<AiReplySuggestion[]>([]);
+  const [_loadingAiSuggestions, setLoadingAiSuggestions] = React.useState(false);
+  const [selectedSuggestion, setSelectedSuggestion] = React.useState<AiReplySuggestion | null>(null);
+  const [menuAnchorEl, setMenuAnchorEl] = React.useState<null | HTMLElement>(null);
   
   /**
    * 獲取對話
