@@ -25,7 +25,7 @@ interface LanguageOption {
  */
 const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
-  const [anchorEl, setAnchorEl] = React.useState<null | HTMLElement>(null);
+  const [anchorEl, setAnchorEl] = React.useState<HTMLElement | null>(null);
   const open = Boolean(anchorEl);
 
   // 支持的語言列表
