@@ -22,7 +22,7 @@ import {
   Send as SendIcon,
   AttachFile as AttachFileIcon,
   MoreVert as MoreVertIcon,
-  SentimentSatisfied as EmojiIcon,
+  EmojiEmotions as EmojiIcon,
   CheckCircle as CheckCircleIcon,
   Close as CloseIcon,
   Star as AiIcon,
